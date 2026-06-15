@@ -1,0 +1,342 @@
+@use '@/styles/variables.scss' as *;
+
+.settingsPage {
+  min-height: 100vh;
+  padding: $page-padding;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin: $spacing-lg 0 $spacing-md;
+  display: flex;
+  align-items: center;
+
+  .icon {
+    margin-right: $spacing-sm;
+  }
+}
+
+.settingsCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  border: 1px solid $color-border;
+  overflow: hidden;
+  margin-bottom: $spacing-md;
+}
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid $color-divider;
+  transition: background $transition-fast;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:active {
+    background: $color-bg-hover;
+  }
+
+  .settingLeft {
+    display: flex;
+    align-items: center;
+    flex: 1;
+
+    .settingIcon {
+      font-size: 36rpx;
+      margin-right: $spacing-md;
+      width: 56rpx;
+      text-align: center;
+    }
+
+    .settingInfo {
+      flex: 1;
+
+      .settingName {
+        font-size: $font-size-md;
+        color: $color-text-primary;
+        margin-bottom: 4rpx;
+      }
+
+      .settingDesc {
+        font-size: $font-size-xs;
+        color: $color-text-tertiary;
+      }
+    }
+  }
+
+  .settingRight {
+    display: flex;
+    align-items: center;
+
+    .settingValue {
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      margin-right: $spacing-sm;
+    }
+
+    .arrow {
+      font-size: 28rpx;
+      color: $color-text-tertiary;
+    }
+  }
+}
+
+.switch {
+  width: 88rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  position: relative;
+  transition: all $transition-fast;
+
+  &.on {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  }
+
+  &.off {
+    background: $color-bg-hover;
+  }
+
+  .switchDot {
+    position: absolute;
+    top: 4rpx;
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 50%;
+    background: white;
+    transition: all $transition-fast;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
+  }
+
+  &.on .switchDot {
+    left: 44rpx;
+  }
+
+  &.off .switchDot {
+    left: 4rpx;
+  }
+}
+
+.activityCard {
+  background: linear-gradient(135deg, rgba(255, 125, 0, 0.15) 0%, rgba(255, 125, 0, 0.05) 100%);
+  border: 1px solid rgba(255, 125, 0, 0.3);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+
+  .activityHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: $spacing-md;
+
+    .activityIcon {
+      font-size: 48rpx;
+      margin-right: $spacing-md;
+    }
+
+    .activityTitle {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-text-primary;
+    }
+  }
+
+  .activityCode {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: $radius-md;
+    padding: $spacing-md;
+    text-align: center;
+    font-family: monospace;
+    font-size: 36rpx;
+    font-weight: $font-weight-bold;
+    color: $color-gold;
+    letter-spacing: 8rpx;
+    margin-bottom: $spacing-md;
+  }
+
+  .activityDesc {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    text-align: center;
+  }
+}
+
+.inputField {
+  width: 100%;
+  background: $color-bg-input;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  box-sizing: border-box;
+  text-align: center;
+
+  &:focus {
+    border-color: $color-primary-light;
+  }
+}
+
+.btnPrimary {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-lg;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: white;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  box-shadow: $glow-blue;
+  margin-top: $spacing-lg;
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
+
+.btnSecondary {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-md;
+  background: rgba(255, 255, 255, 0.08);
+  color: $color-text-primary;
+  border: 1px solid $color-border;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  margin-top: $spacing-md;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.btnDanger {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-md;
+  background: rgba(245, 63, 63, 0.1);
+  color: $color-error;
+  border: 1px solid rgba(245, 63, 63, 0.3);
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  margin-top: $spacing-md;
+
+  &:active {
+    background: rgba(245, 63, 63, 0.2);
+  }
+}
+
+.sliderContainer {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+
+  .sliderLabel {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    min-width: 80rpx;
+  }
+
+  .sliderValue {
+    font-size: $font-size-sm;
+    color: $color-primary-light;
+    font-weight: $font-weight-semibold;
+    min-width: 60rpx;
+    text-align: right;
+  }
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: $page-padding;
+}
+
+.modalContent {
+  background: $color-bg-card;
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  width: 100%;
+  max-width: 600rpx;
+  border: 1px solid $color-border;
+
+  .modalTitle {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    text-align: center;
+    margin-bottom: $spacing-lg;
+    color: $color-text-primary;
+  }
+
+  .modalActions {
+    display: flex;
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
+  }
+}
+
+.optionList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.optionItem {
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+  text-align: center;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  transition: all $transition-fast;
+
+  &.active {
+    background: rgba(22, 93, 255, 0.2);
+    border-color: $color-primary-light;
+    color: $color-primary-light;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.aboutSection {
+  text-align: center;
+  padding: $spacing-xl 0;
+
+  .logo {
+    font-size: 64rpx;
+    margin-bottom: $spacing-md;
+  }
+
+  .appName {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+    margin-bottom: 8rpx;
+  }
+
+  .version {
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+  }
+}

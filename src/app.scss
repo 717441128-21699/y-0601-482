@@ -1,0 +1,66 @@
+@use '@/styles/compat.scss';
+@use '@/styles/variables.scss' as *;
+
+// 全局样式
+page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB',
+    sans-serif;
+  font-size: $font-size-md;
+  line-height: $line-height-normal;
+  color: $color-text-primary;
+  background-color: $color-bg-page;
+  min-height: 100vh;
+}
+
+// 通用容器
+.page-container {
+  min-height: 100vh;
+  padding: $page-padding;
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+// 卡片通用样式
+.card {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+// 渐变文字
+.gradient-text {
+  background: linear-gradient(135deg, $color-primary-light 0%, $color-gold-light 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+// 霓虹按钮
+.btn-neon {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  border: none;
+  border-radius: $radius-button;
+  font-weight: $font-weight-semibold;
+  box-shadow: $glow-blue;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
+
+// 红方主题
+.btn-red {
+  background: linear-gradient(135deg, $color-red 0%, $color-red-light 100%);
+  box-shadow: $glow-red;
+}
+
+// 金色主题
+.btn-gold {
+  background: linear-gradient(135deg, $color-gold 0%, $color-gold-light 100%);
+  box-shadow: $glow-gold;
+}

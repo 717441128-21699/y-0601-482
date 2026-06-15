@@ -1,0 +1,51 @@
+// ============================================
+// 主题配色变量 - 团建对战游戏（科技霓虹风）
+// ============================================
+
+// 品牌主题色
+$color-primary: #165DFF;
+$color-primary-light: #4080FF;
+$color-primary-dark: #0E42D2;
+
+// 阵营色 - 红方
+$color-red: #F53F3F;
+$color-red-light: #FF7D7D;
+$color-red-dark: #CB2634;
+
+// 阵营色 - 蓝方
+$color-blue: #165DFF;
+$color-blue-light: #4080FF;
+$color-blue-dark: #0E42D2;
+
+// 金色 / 高亮
+$color-gold: #FF7D00;
+$color-gold-light: #FF9A2E;
+$color-gold-dark: #D25F00;
+
+// 功能色
+$color-success: #00B42A;
+$color-warning: #FF7D00;
+$color-error: #F53F3F;
+$color-info: #165DFF;
+
+// 背景色 - 深色主题
+$color-bg-page: #0F172A;
+$color-bg-card: #1E293B;
+$color-bg-hover: #334155;
+$color-bg-input: #0F172A;
+
+// 文本色 - 深色主题
+$color-text-primary: #F1F5F9;
+$color-text-secondary: #94A3B8;
+$color-text-tertiary: #64748B;
+$color-text-disabled: #475569;
+$color-text-white: #FFFFFF;
+
+// 边框色 - 深色主题
+$color-border: #334155;
+$color-divider: #1E293B;
+
+// 霓虹光效
+$glow-blue: 0 0 20rpx rgba(22, 93, 255, 0.5);
+$glow-red: 0 0 20rpx rgba(245, 63, 63, 0.5);
+$glow-gold: 0 0 20rpx rgba(255, 125, 0, 0.5);

@@ -1,0 +1,515 @@
+@use '@/styles/variables.scss' as *;
+
+.battlePage {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.topBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: calc(env(safe-area-inset-top) + 16rpx) 24rpx 16rpx;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, transparent 100%);
+}
+
+.scoreBoard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(30, 41, 59, 0.9);
+  border-radius: $radius-lg;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid $color-border;
+}
+
+.teamScore {
+  flex: 1;
+  text-align: center;
+
+  &.redTeam .score {
+    color: $color-red;
+    text-shadow: $glow-red;
+  }
+
+  &.blueTeam .score {
+    color: $color-blue;
+    text-shadow: $glow-blue;
+  }
+
+  .teamLabel {
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    margin-bottom: 4rpx;
+  }
+
+  .score {
+    font-size: 48rpx;
+    font-weight: $font-weight-bold;
+  }
+}
+
+.centerInfo {
+  text-align: center;
+  padding: 0 $spacing-md;
+
+  .timer {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gold;
+    font-family: monospace;
+  }
+
+  .roundInfo {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+    margin-top: 4rpx;
+  }
+}
+
+.gameMapContainer {
+  position: relative;
+  width: 100%;
+  padding-top: 120rpx;
+  padding-bottom: 300rpx;
+}
+
+.gameMap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.1) 0%, rgba(245, 63, 63, 0.05) 50%, rgba(255, 125, 0, 0.1) 100%);
+  border-radius: $radius-lg;
+  margin: $spacing-md;
+  width: calc(100% - 48rpx);
+  border: 2px solid $color-border;
+  overflow: hidden;
+
+  .mapGrid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40rpx 40rpx;
+  }
+
+  .flag {
+    position: absolute;
+    font-size: 48rpx;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 0 10rpx rgba(255, 255, 255, 0.5));
+    animation: flagWave 2s ease-in-out infinite;
+
+    &.redFlag {
+      filter: drop-shadow(0 0 15rpx rgba(245, 63, 63, 0.6));
+    }
+
+    &.blueFlag {
+      filter: drop-shadow(0 0 15rpx rgba(22, 93, 255, 0.6));
+    }
+
+    &.neutralFlag {
+      filter: drop-shadow(0 0 15rpx rgba(255, 125, 0, 0.6));
+    }
+  }
+
+  @keyframes flagWave {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+  }
+
+  .player {
+    position: absolute;
+    width: 60rpx;
+    height: 60rpx;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    font-weight: $font-weight-bold;
+    color: white;
+    z-index: 10;
+    transition: all 0.3s ease;
+
+    &.redPlayer {
+      background: linear-gradient(135deg, $color-red 0%, $color-red-light 100%);
+      box-shadow: $glow-red;
+      border: 3px solid $color-red-light;
+    }
+
+    &.bluePlayer {
+      background: linear-gradient(135deg, $color-blue 0%, $color-blue-light 100%);
+      box-shadow: $glow-blue;
+      border: 3px solid $color-blue-light;
+    }
+
+    &.hasShield {
+      &::after {
+        content: '';
+        position: absolute;
+        top: -8rpx;
+        left: -8rpx;
+        right: -8rpx;
+        bottom: -8rpx;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 215, 0, 0.8);
+        animation: shieldPulse 1.5s ease-in-out infinite;
+      }
+    }
+
+    &.dead {
+      opacity: 0.3;
+      filter: grayscale(1);
+    }
+
+    &.me {
+      width: 72rpx;
+      height: 72rpx;
+      border: 4px solid white;
+      z-index: 20;
+    }
+  }
+
+  @keyframes shieldPulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  .capturePoint {
+    position: absolute;
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 3px dashed rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32rpx;
+
+    &.capturedRed {
+      border-color: $color-red;
+      background: rgba(245, 63, 63, 0.2);
+    }
+
+    &.capturedBlue {
+      border-color: $color-blue;
+      background: rgba(22, 93, 255, 0.2);
+    }
+  }
+
+  .spawnZone {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.15;
+    transform: translate(-50%, -50%);
+
+    &.redZone {
+      background: $color-red;
+    }
+
+    &.blueZone {
+      background: $color-blue;
+    }
+  }
+}
+
+@keyframes shieldPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: $spacing-md;
+  padding-bottom: calc($spacing-md + env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, rgba(15, 23, 42, 0.98) 0%, transparent 100%);
+}
+
+.itemBar {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.itemSlot {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: $radius-md;
+  background: rgba(30, 41, 59, 0.9);
+  border: 2px solid $color-border;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all $transition-base;
+
+  &.active {
+    border-color: $color-gold;
+    box-shadow: $glow-gold;
+  }
+
+  &:active {
+    transform: scale(0.9);
+  }
+
+  .itemIcon {
+    font-size: 40rpx;
+  }
+
+  .itemName {
+    font-size: 18rpx;
+    color: $color-text-secondary;
+    margin-top: 4rpx;
+  }
+
+  .cooldownOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+  }
+}
+
+.actionButtons {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.actionBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+
+  &.primary {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: white;
+    box-shadow: $glow-blue;
+  }
+
+  &.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: $color-text-primary;
+    border: 1px solid $color-border;
+  }
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
+
+.messageLog {
+  position: fixed;
+  top: 160rpx;
+  left: 24rpx;
+  right: 24rpx;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.messageItem {
+  padding: $spacing-xs $spacing-md;
+  margin-bottom: $spacing-xs;
+  border-radius: $radius-round;
+  font-size: $font-size-sm;
+  display: inline-block;
+  max-width: 80%;
+
+  &.teamMsg {
+    background: rgba(22, 93, 255, 0.8);
+    color: white;
+  }
+
+  &.systemMsg {
+    background: rgba(255, 125, 0, 0.8);
+    color: white;
+  }
+
+  &.infoMsg {
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+  }
+}
+
+.respawnOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+
+  .respawnText {
+    font-size: $font-size-xl;
+    color: $color-text-primary;
+    margin-bottom: $spacing-md;
+  }
+
+  .respawnTimer {
+    font-size: 120rpx;
+    font-weight: $font-weight-bold;
+    color: $color-gold;
+    text-shadow: $glow-gold;
+  }
+
+  .respawnHint {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    margin-top: $spacing-md;
+  }
+}
+
+.pauseOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+
+  .pauseIcon {
+    font-size: 100rpx;
+    margin-bottom: $spacing-lg;
+  }
+
+  .pauseText {
+    font-size: $font-size-xxl;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-md;
+  }
+
+  .pauseReason {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-xl;
+  }
+
+  .pauseActions {
+    display: flex;
+    gap: $spacing-md;
+    width: 80%;
+  }
+}
+
+.statsPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600rpx;
+  background: $color-bg-card;
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  z-index: 400;
+  border: 1px solid $color-border;
+
+  .popupTitle {
+    text-align: center;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-lg;
+  }
+
+  .playerStat {
+    display: flex;
+    align-items: center;
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid $color-divider;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .rank {
+      width: 48rpx;
+      font-size: $font-size-md;
+      font-weight: $font-weight-bold;
+      color: $color-gold;
+      text-align: center;
+    }
+
+    .playerInfo {
+      flex: 1;
+      margin-left: $spacing-sm;
+
+      .name {
+        font-size: $font-size-sm;
+        color: $color-text-primary;
+      }
+
+      .team {
+        font-size: $font-size-xs;
+        color: $color-text-tertiary;
+      }
+    }
+
+    .playerScore {
+      font-size: $font-size-md;
+      font-weight: $font-weight-bold;
+      color: $color-primary-light;
+    }
+  }
+
+  .closeBtn {
+    @include button-reset;
+    width: 100%;
+    height: $button-height-md;
+    background: $color-primary;
+    color: white;
+    border-radius: $radius-button;
+    margin-top: $spacing-lg;
+  }
+}
+
+.spectatorBadge {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  padding: 4rpx 16rpx;
+  background: rgba(0, 0, 0, 0.6);
+  color: $color-gold;
+  font-size: 20rpx;
+  border-radius: $radius-round;
+  z-index: 5;
+}

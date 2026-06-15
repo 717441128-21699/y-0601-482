@@ -1,0 +1,311 @@
+@use '@/styles/variables.scss' as *;
+
+.teamPage {
+  min-height: 100vh;
+  padding: $page-padding;
+  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+}
+
+.roomInfo {
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.15) 0%, rgba(255, 125, 0, 0.1) 100%);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  border: 1px solid rgba(64, 128, 255, 0.2);
+
+  .roomName {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-sm;
+  }
+
+  .roomMeta {
+    display: flex;
+    justify-content: space-between;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+
+    .roomId {
+      font-family: monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4rpx 16rpx;
+      border-radius: $radius-sm;
+    }
+  }
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin: $spacing-md 0;
+  display: flex;
+  align-items: center;
+
+  .icon {
+    margin-right: $spacing-sm;
+  }
+}
+
+.teamsContainer {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.teamColumn {
+  flex: 1;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  min-height: 400rpx;
+
+  &.redTeam {
+    background: linear-gradient(180deg, rgba(245, 63, 63, 0.15) 0%, rgba(245, 63, 63, 0.05) 100%);
+    border: 1px solid rgba(245, 63, 63, 0.3);
+  }
+
+  &.blueTeam {
+    background: linear-gradient(180deg, rgba(22, 93, 255, 0.15) 0%, rgba(22, 93, 255, 0.05) 100%);
+    border: 1px solid rgba(22, 93, 255, 0.3);
+  }
+
+  .teamHeader {
+    text-align: center;
+    margin-bottom: $spacing-md;
+
+    .teamName {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-bold;
+    }
+
+    .redText {
+      color: $color-red;
+      text-shadow: $glow-red;
+    }
+
+    .blueText {
+      color: $color-blue;
+      text-shadow: $glow-blue;
+    }
+
+    .teamCount {
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      margin-top: 4rpx;
+    }
+  }
+}
+
+.playerItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm $spacing-xs;
+  border-radius: $radius-md;
+  margin-bottom: $spacing-xs;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all $transition-base;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(0.98);
+  }
+
+  .playerAvatar {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: $radius-round;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    margin-right: $spacing-sm;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .playerInfo {
+    flex: 1;
+    min-width: 0;
+
+    .playerName {
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+      color: $color-text-primary;
+      @include text-ellipsis;
+    }
+
+    .playerRole {
+      font-size: $font-size-xs;
+      color: $color-text-tertiary;
+    }
+  }
+
+  .readyBadge {
+    font-size: 20rpx;
+    padding: 4rpx 12rpx;
+    border-radius: $radius-round;
+    
+    &.ready {
+      background: rgba(0, 180, 42, 0.2);
+      color: $color-success;
+    }
+
+    &.notReady {
+      background: rgba(255, 125, 0, 0.2);
+      color: $color-warning;
+    }
+  }
+
+  .hostBadge {
+    font-size: 20rpx;
+    padding: 4rpx 12rpx;
+    border-radius: $radius-round;
+    background: rgba(255, 125, 0, 0.2);
+    color: $color-gold;
+    margin-right: $spacing-xs;
+  }
+}
+
+.mapSelector {
+  display: flex;
+  gap: $spacing-sm;
+  overflow-x: auto;
+  padding-bottom: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  @include scroll-x-container;
+}
+
+.mapCard {
+  @include scroll-x-item(280rpx);
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  border: 2px solid transparent;
+  transition: all $transition-base;
+
+  &.active {
+    border-color: $color-primary;
+    box-shadow: $glow-blue;
+  }
+
+  .mapPreview {
+    height: 140rpx;
+    background: linear-gradient(135deg, rgba(22, 93, 255, 0.3) 0%, rgba(255, 125, 0, 0.2) 100%);
+    border-radius: $radius-sm;
+    margin-bottom: $spacing-sm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48rpx;
+  }
+
+  .mapName {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    margin-bottom: 4rpx;
+  }
+
+  .mapDesc {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+  }
+}
+
+.settingsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md 0;
+  border-bottom: 1px solid $color-divider;
+
+  .settingLabel {
+    font-size: $font-size-md;
+    color: $color-text-primary;
+  }
+
+  .settingValue {
+    font-size: $font-size-md;
+    color: $color-primary-light;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.actionBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: $spacing-md $page-padding;
+  padding-bottom: calc($spacing-md + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent 0%, rgba(15, 23, 42, 0.95) 30%);
+  display: flex;
+  gap: $spacing-md;
+  z-index: 100;
+}
+
+.btnReady {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+
+  &.notReady {
+    background: linear-gradient(135deg, $color-gold 0%, $color-gold-light 100%);
+    color: $color-text-white;
+    box-shadow: $glow-gold;
+  }
+
+  &.ready {
+    background: linear-gradient(135deg, $color-success 0%, #23c34a 100%);
+    color: $color-text-white;
+  }
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
+
+.btnStart {
+  @include button-reset;
+  flex: 2;
+  height: $button-height-lg;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+  box-shadow: $glow-blue;
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+}
+
+.btnAuto {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-md;
+  background: rgba(255, 255, 255, 0.08);
+  color: $color-text-secondary;
+  border: 1px solid $color-border;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  margin-top: $spacing-md;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}

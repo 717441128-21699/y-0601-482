@@ -1,0 +1,413 @@
+@use '@/styles/variables.scss' as *;
+
+.recordPage {
+  min-height: 100vh;
+  padding: $page-padding;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+}
+
+.statsOverview {
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.2) 0%, rgba(255, 125, 0, 0.15) 100%);
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  margin-bottom: $spacing-xl;
+  border: 1px solid rgba(64, 128, 255, 0.3);
+
+  .title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-lg;
+    text-align: center;
+  }
+
+  .statsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+  }
+
+  .statItem {
+    flex: 1;
+    min-width: 140rpx;
+    text-align: center;
+
+    .statValue {
+      font-size: 48rpx;
+      font-weight: $font-weight-bold;
+      background: linear-gradient(135deg, $color-primary-light 0%, $color-gold-light 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .statLabel {
+      font-size: $font-size-xs;
+      color: $color-text-secondary;
+      margin-top: $spacing-xs;
+    }
+  }
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+  display: flex;
+  align-items: center;
+
+  .icon {
+    margin-right: $spacing-sm;
+  }
+}
+
+.recordList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.recordCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  border: 1px solid $color-border;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.98);
+    border-color: $color-primary-light;
+  }
+
+  .recordHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $spacing-md;
+
+    .mapInfo {
+      display: flex;
+      align-items: center;
+
+      .mapIcon {
+        font-size: 40rpx;
+        margin-right: $spacing-sm;
+      }
+
+      .mapName {
+        font-size: $font-size-md;
+        font-weight: $font-weight-semibold;
+        color: $color-text-primary;
+      }
+
+      .date {
+        font-size: $font-size-xs;
+        color: $color-text-tertiary;
+        margin-top: 4rpx;
+      }
+    }
+
+    .resultBadge {
+      padding: 8rpx 20rpx;
+      border-radius: $radius-round;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+
+      &.win {
+        background: rgba(0, 180, 42, 0.2);
+        color: $color-success;
+      }
+
+      &.lose {
+        background: rgba(245, 63, 63, 0.2);
+        color: $color-error;
+      }
+
+      &.draw {
+        background: rgba(255, 125, 0, 0.2);
+        color: $color-warning;
+      }
+    }
+  }
+
+  .scoreRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-md 0;
+    border-top: 1px solid $color-divider;
+    border-bottom: 1px solid $color-divider;
+    margin-bottom: $spacing-md;
+
+    .teamScore {
+      text-align: center;
+      flex: 1;
+
+      .teamName {
+        font-size: $font-size-sm;
+        color: $color-text-secondary;
+        margin-bottom: $spacing-xs;
+      }
+
+      .score {
+        font-size: 48rpx;
+        font-weight: $font-weight-bold;
+
+        &.red {
+          color: $color-red;
+          text-shadow: $glow-red;
+        }
+
+        &.blue {
+          color: $color-blue;
+          text-shadow: $glow-blue;
+        }
+      }
+    }
+
+    .vsText {
+      font-size: $font-size-lg;
+      color: $color-text-tertiary;
+      padding: 0 $spacing-md;
+    }
+  }
+
+  .mvpRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .mvpLabel {
+      font-size: $font-size-sm;
+      color: $color-gold;
+      font-weight: $font-weight-semibold;
+      display: flex;
+      align-items: center;
+
+      .mvpIcon {
+        margin-right: 8rpx;
+        font-size: $font-size-md;
+      }
+    }
+
+    .mvpName {
+      font-size: $font-size-sm;
+      color: $color-text-primary;
+      font-weight: $font-weight-medium;
+    }
+  }
+}
+
+.mvpSection {
+  margin-bottom: $spacing-xl;
+}
+
+.mvpCard {
+  background: linear-gradient(135deg, rgba(255, 125, 0, 0.15) 0%, rgba(255, 125, 0, 0.05) 100%);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  border: 1px solid rgba(255, 125, 0, 0.3);
+  display: flex;
+  align-items: center;
+
+  .mvpAvatar {
+    width: 100rpx;
+    height: 100rpx;
+    border-radius: $radius-round;
+    background: linear-gradient(135deg, $color-gold 0%, $color-gold-light 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48rpx;
+    margin-right: $spacing-md;
+    box-shadow: $glow-gold;
+  }
+
+  .mvpInfo {
+    flex: 1;
+
+    .mvpTitle {
+      font-size: $font-size-md;
+      color: $color-gold;
+      font-weight: $font-weight-semibold;
+      margin-bottom: 4rpx;
+    }
+
+    .mvpPlayer {
+      font-size: $font-size-lg;
+      color: $color-text-primary;
+      font-weight: $font-weight-bold;
+      margin-bottom: 4rpx;
+    }
+
+    .mvpStats {
+      font-size: $font-size-xs;
+      color: $color-text-secondary;
+    }
+  }
+}
+
+.tabs {
+  display: flex;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: 8rpx;
+  margin-bottom: $spacing-lg;
+  border: 1px solid $color-border;
+}
+
+.tabItem {
+  flex: 1;
+  text-align: center;
+  padding: $spacing-sm 0;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-base;
+
+  &.active {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: white;
+    font-weight: $font-weight-semibold;
+    box-shadow: $glow-blue;
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding: $spacing-xl;
+
+  .emptyIcon {
+    font-size: 80rpx;
+    margin-bottom: $spacing-md;
+  }
+
+  .emptyText {
+    font-size: $font-size-md;
+    color: $color-text-tertiary;
+  }
+}
+
+.detailModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $page-padding;
+}
+
+.detailContent {
+  background: $color-bg-card;
+  border-radius: $radius-xl;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  border: 1px solid $color-border;
+}
+
+.detailHeader {
+  padding: $spacing-lg;
+  border-bottom: 1px solid $color-divider;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+
+  .closeBtn {
+    font-size: 36rpx;
+    color: $color-text-tertiary;
+    padding: $spacing-xs;
+  }
+}
+
+.detailBody {
+  padding: $spacing-lg;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.playerRow {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm 0;
+  border-bottom: 1px solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .rank {
+    width: 56rpx;
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    text-align: center;
+
+    &.gold { color: #FFD700; }
+    &.silver { color: #C0C0C0; }
+    &.bronze { color: #CD7F32; }
+    &.normal { color: $color-text-tertiary; }
+  }
+
+  .playerInfo {
+    flex: 1;
+    display: flex;
+    align-items: center;
+
+    .avatar {
+      width: 56rpx;
+      height: 56rpx;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: $spacing-sm;
+      font-size: 28rpx;
+    }
+
+    .name {
+      font-size: $font-size-sm;
+      color: $color-text-primary;
+      font-weight: $font-weight-medium;
+    }
+
+    .teamBadge {
+      font-size: 20rpx;
+      margin-left: $spacing-xs;
+    }
+  }
+
+  .playerStats {
+    text-align: right;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    line-height: 1.4;
+  }
+
+  .score {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-primary-light;
+    min-width: 80rpx;
+    text-align: right;
+  }
+
+  .mvpBadge {
+    font-size: 24rpx;
+    margin-left: 8rpx;
+  }
+}
