@@ -11,15 +11,18 @@ const TeamPage: React.FC = () => {
     currentMap, 
     maps, 
     myPlayerId,
+    roomSettings,
     toggleReady, 
     autoAssignTeams, 
     swapPlayerTeam, 
     setMap, 
+    startCountdown,
     startGame,
     joinRoom
   } = useGameStore();
 
   const [countdown, setCountdown] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     if (!currentRoom) {
@@ -31,11 +34,13 @@ const TeamPage: React.FC = () => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (countdown === 0 && currentRoom?.gameStatus === 'countdown') {
+    } else if (countdown === 0 && currentRoom?.gameStatus === 'countdown' && !isNavigating) {
+      setIsNavigating(true);
       startGame();
-      Taro.navigateTo({ url: '/pages/battle/index' });
+      console.log('[Team] Countdown finished, navigating to battle');
+      Taro.redirectTo({ url: '/pages/battle/index' });
     }
-  }, [countdown]);
+  }, [countdown, currentRoom?.gameStatus, isNavigating]);
 
   if (!currentRoom) {
     return (
@@ -61,8 +66,9 @@ const TeamPage: React.FC = () => {
       Taro.showToast({ title: '请等待所有人准备', icon: 'none' });
       return;
     }
+    startCountdown();
     setCountdown(3);
-    console.log('[Team] Game starting...');
+    console.log('[Team] Countdown started');
   };
 
   const handlePlayerClick = (playerId: string) => {
@@ -201,7 +207,7 @@ const TeamPage: React.FC = () => {
       </View>
       <View className={styles.settingsRow} style={{ borderBottom: 'none' }}>
         <Text className={styles.settingLabel}>复活时间</Text>
-        <Text className={styles.settingValue}>10 秒</Text>
+        <Text className={styles.settingValue}>{roomSettings.respawnTime} 秒</Text>
       </View>
 
       <View className={styles.actionBar}>

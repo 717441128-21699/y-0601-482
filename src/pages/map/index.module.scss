@@ -1,0 +1,338 @@
+@use '@/styles/variables.scss' as *;
+
+.mapPage {
+  min-height: 100vh;
+  padding: $page-padding;
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+}
+
+.pageHeader {
+  text-align: center;
+  margin-bottom: $spacing-xl;
+  padding-top: $spacing-lg;
+
+  .title {
+    font-size: $font-size-xxl;
+    font-weight: $font-weight-bold;
+    background: linear-gradient(135deg, $color-primary-light 0%, $color-gold-light 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: $spacing-xs;
+  }
+
+  .subtitle {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+}
+
+.mapGrid {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.mapCard {
+  background: $color-bg-card;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  border: 2px solid $color-border;
+  transition: all $transition-base;
+
+  &.active {
+    border-color: $color-primary;
+    box-shadow: $glow-blue;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  .mapPreview {
+    position: relative;
+    height: 320rpx;
+    background: linear-gradient(135deg, rgba(22, 93, 255, 0.2) 0%, rgba(255, 125, 0, 0.15) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .mapIcon {
+      font-size: 120rpx;
+    }
+
+    .mapBadge {
+      position: absolute;
+      top: $spacing-md;
+      right: $spacing-md;
+      padding: 8rpx 20rpx;
+      background: rgba(0, 180, 42, 0.8);
+      color: white;
+      border-radius: $radius-round;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+    }
+
+    .difficultyBadge {
+      position: absolute;
+      top: $spacing-md;
+      left: $spacing-md;
+      padding: 8rpx 20rpx;
+      background: rgba(255, 125, 0, 0.8);
+      color: white;
+      border-radius: $radius-round;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  .mapInfo {
+    padding: $spacing-lg;
+
+    .mapHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: $spacing-sm;
+
+      .mapName {
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        color: $color-text-primary;
+      }
+
+      .playerCount {
+        font-size: $font-size-sm;
+        color: $color-primary-light;
+        font-weight: $font-weight-medium;
+      }
+    }
+
+    .mapDesc {
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      margin-bottom: $spacing-md;
+      line-height: 1.6;
+    }
+
+    .mapStats {
+      display: flex;
+      gap: $spacing-md;
+
+      .statItem {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: $radius-md;
+        padding: $spacing-sm;
+        text-align: center;
+
+        .statIcon {
+          font-size: 32rpx;
+          margin-bottom: 4rpx;
+        }
+
+        .statValue {
+          font-size: $font-size-sm;
+          font-weight: $font-weight-semibold;
+          color: $color-text-primary;
+        }
+
+        .statLabel {
+          font-size: $font-size-xs;
+          color: $color-text-tertiary;
+        }
+      }
+    }
+  }
+
+  .mapAction {
+    padding: 0 $spacing-lg $spacing-lg;
+
+    .selectBtn {
+      @include button-reset;
+      width: 100%;
+      height: $button-height-md;
+      background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+      color: white;
+      border-radius: $radius-button;
+      font-size: $font-size-md;
+      font-weight: $font-weight-semibold;
+
+      &.selected {
+        background: linear-gradient(135deg, $color-success 0%, #23c34a 100%);
+      }
+
+      &:active {
+        transform: scale(0.96);
+        opacity: 0.9;
+      }
+    }
+  }
+}
+
+.detailModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $page-padding;
+}
+
+.detailContent {
+  background: $color-bg-card;
+  border-radius: $radius-xl;
+  width: 100%;
+  max-height: 85vh;
+  overflow: hidden;
+  border: 1px solid $color-border;
+}
+
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-lg;
+  border-bottom: 1px solid $color-divider;
+
+  .title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+
+  .closeBtn {
+    font-size: 40rpx;
+    color: $color-text-tertiary;
+    padding: $spacing-xs;
+  }
+}
+
+.detailBody {
+  padding: $spacing-lg;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.detailPreview {
+  height: 400rpx;
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.2) 0%, rgba(255, 125, 0, 0.15) 100%);
+  border-radius: $radius-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: $spacing-lg;
+  position: relative;
+
+  .bigIcon {
+    font-size: 160rpx;
+  }
+
+  .miniMap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.3;
+
+    .gridOverlay {
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+      background-size: 40rpx 40rpx;
+    }
+
+    .flagPoint {
+      position: absolute;
+      font-size: 36rpx;
+      transform: translate(-50%, -50%);
+    }
+
+    .spawnPoint {
+      position: absolute;
+      width: 60rpx;
+      height: 60rpx;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.5;
+
+      &.red { background: $color-red; }
+      &.blue { background: $color-blue; }
+    }
+
+    .capturePoint {
+      position: absolute;
+      width: 40rpx;
+      height: 40rpx;
+      border-radius: 50%;
+      border: 2px dashed rgba(255, 255, 255, 0.5);
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
+.detailInfo {
+  margin-bottom: $spacing-lg;
+
+  .infoRow {
+    display: flex;
+    justify-content: space-between;
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid $color-divider;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      color: $color-text-secondary;
+      font-size: $font-size-sm;
+    }
+
+    .value {
+      color: $color-text-primary;
+      font-weight: $font-weight-medium;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+.detailTips {
+  background: rgba(255, 125, 0, 0.1);
+  border: 1px solid rgba(255, 125, 0, 0.3);
+  border-radius: $radius-md;
+  padding: $spacing-md;
+
+  .tipsTitle {
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-gold;
+    margin-bottom: $spacing-sm;
+    display: flex;
+    align-items: center;
+
+    .icon {
+      margin-right: $spacing-xs;
+    }
+  }
+
+  .tipsList {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    line-height: 1.8;
+
+    li {
+      margin-bottom: 4rpx;
+    }
+  }
+}

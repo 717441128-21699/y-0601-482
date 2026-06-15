@@ -15,6 +15,11 @@ interface GameState {
   settings: GameSettings;
   activityCode: string;
   messages: { id: string; text: string; type: 'info' | 'team' | 'system' }[];
+  roomSettings: {
+    totalRounds: number;
+    roundTime: number;
+    respawnTime: number;
+  };
 
   createRoom: (name: string, maxPlayers: number) => void;
   joinRoom: (roomId: string, activityCode?: string) => void;
@@ -23,6 +28,7 @@ interface GameState {
   toggleReady: () => void;
   autoAssignTeams: () => void;
   swapPlayerTeam: (playerId: string) => void;
+  startCountdown: () => void;
   startGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
@@ -30,7 +36,10 @@ interface GameState {
   useItem: (itemId: string) => void;
   addMessage: (text: string, type: 'info' | 'team' | 'system') => void;
   updateSettings: (settings: Partial<GameSettings>) => void;
+  updateRoomSettings: (settings: { totalRounds?: number; roundTime?: number; respawnTime?: number }) => void;
   setActivityCode: (code: string) => void;
+  updatePlayerGameData: (playerId: string, data: Partial<Player>) => void;
+  updateScore: (team: 'red' | 'blue', delta: number) => void;
 }
 
 const initialSettings: GameSettings = {
@@ -56,8 +65,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   settings: initialSettings,
   activityCode: '',
   messages: [],
+  roomSettings: {
+    totalRounds: 3,
+    roundTime: 600,
+    respawnTime: 10
+  },
 
   createRoom: (name, maxPlayers) => {
+    const { roomSettings } = get();
     const room: GameRoom = {
       id: 'room-' + Date.now(),
       name,
@@ -67,9 +82,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       mapId: 'map1',
       gameStatus: 'waiting',
       gameMode: 'capture',
-      totalRounds: 3,
+      totalRounds: roomSettings.totalRounds,
       currentRound: 1,
-      roundTime: 600,
+      roundTime: roomSettings.roundTime,
       score: { red: 0, blue: 0 },
       spectators: []
     };
@@ -78,6 +93,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   joinRoom: (roomId, activityCode) => {
+    const { roomSettings } = get();
     const allPlayers = [...mockWaitingPlayers.slice(0, 5), { ...mockWaitingPlayers[0], id: 'p1', name: '我', isHost: false, isReady: false }];
     const shuffled = allPlayers.sort(() => Math.random() - 0.5);
     const players = shuffled.map((p, i) => ({
@@ -95,9 +111,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       mapId: 'map1',
       gameStatus: 'waiting',
       gameMode: 'capture',
-      totalRounds: 3,
+      totalRounds: roomSettings.totalRounds,
       currentRound: 1,
-      roundTime: 600,
+      roundTime: roomSettings.roundTime,
       score: { red: 0, blue: 0 },
       activityCode,
       spectators: []
@@ -169,13 +185,45 @@ export const useGameStore = create<GameState>((set, get) => ({
     console.log('[GameStore] Player team swapped:', playerId);
   },
 
-  startGame: () => {
+  startCountdown: () => {
     const { currentRoom } = get();
     if (!currentRoom) return;
     
     set({
-      currentRoom: { ...currentRoom, gameStatus: 'playing' },
-      gameTime: currentRoom.roundTime
+      currentRoom: { ...currentRoom, gameStatus: 'countdown' }
+    });
+    console.log('[GameStore] Countdown started');
+  },
+
+  startGame: () => {
+    const { currentRoom } = get();
+    if (!currentRoom) return;
+    
+    const playersWithInitData = currentRoom.players.map(p => ({
+      ...p,
+      score: 0,
+      kills: 0,
+      deaths: 0,
+      flagsCaptured: 0,
+      hasShield: false,
+      isSlowdown: false,
+      isAlive: true,
+      respawnTime: 0,
+      position: p.team === 'red' 
+        ? { x: 15 + Math.random() * 10, y: 40 + Math.random() * 20 }
+        : { x: 75 + Math.random() * 10, y: 40 + Math.random() * 20 }
+    }));
+    
+    set({
+      currentRoom: { 
+        ...currentRoom, 
+        gameStatus: 'playing',
+        players: playersWithInitData,
+        score: { red: 0, blue: 0 }
+      },
+      players: playersWithInitData,
+      gameTime: currentRoom.roundTime,
+      isPaused: false
     });
     console.log('[GameStore] Game started');
   },
@@ -232,6 +280,50 @@ export const useGameStore = create<GameState>((set, get) => ({
       settings: { ...state.settings, ...newSettings }
     }));
     console.log('[GameStore] Settings updated');
+  },
+
+  updateRoomSettings: (newRoomSettings) => {
+    set(state => {
+      const updatedRoomSettings = { ...state.roomSettings, ...newRoomSettings };
+      const updatedRoom = state.currentRoom ? {
+        ...state.currentRoom,
+        totalRounds: updatedRoomSettings.totalRounds,
+        roundTime: updatedRoomSettings.roundTime
+      } : null;
+      return {
+        roomSettings: updatedRoomSettings,
+        currentRoom: updatedRoom
+      };
+    });
+    console.log('[GameStore] Room settings updated:', newRoomSettings);
+  },
+
+  updatePlayerGameData: (playerId, data) => {
+    const { currentRoom } = get();
+    if (!currentRoom) return;
+    
+    const updatedPlayers = currentRoom.players.map(p => 
+      p.id === playerId ? { ...p, ...data } : p
+    );
+    
+    set({
+      currentRoom: { ...currentRoom, players: updatedPlayers },
+      players: updatedPlayers
+    });
+  },
+
+  updateScore: (team, delta) => {
+    const { currentRoom } = get();
+    if (!currentRoom) return;
+    
+    const updatedScore = {
+      ...currentRoom.score,
+      [team]: currentRoom.score[team] + delta
+    };
+    
+    set({
+      currentRoom: { ...currentRoom, score: updatedScore }
+    });
   },
 
   setActivityCode: (code) => {

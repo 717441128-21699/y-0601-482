@@ -1,32 +1,71 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, Button, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import { useGameStore } from '@/store/gameStore';
-import { mockPlayers } from '@/data/mockPlayers';
 import classnames from 'classnames';
 
 const BattlePage: React.FC = () => {
-  const { currentRoom, currentMap, myPlayerId, items, isPaused, pauseGame, resumeGame } = useGameStore();
-  
-  const [gameTime, setGameTime] = useState(600);
-  const [score, setScore] = useState({ red: 0, blue: 0 });
-  const [players, setPlayers] = useState(mockPlayers);
+  const {
+    currentRoom,
+    currentMap,
+    myPlayerId,
+    items,
+    isPaused,
+    roomSettings,
+    gameTime,
+    pauseGame,
+    resumeGame,
+    updatePlayerGameData,
+    updateScore,
+    addMessage: addStoreMessage,
+    joinRoom
+  } = useGameStore();
+
+  const [localGameTime, setLocalGameTime] = useState(currentRoom?.roundTime || 600);
   const [messages, setMessages] = useState<{ id: string; text: string; type: string }[]>([]);
   const [itemCooldowns, setItemCooldowns] = useState<Record<string, number>>({});
   const [showStats, setShowStats] = useState(false);
   const [isSpectator, setIsSpectator] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
+  const hasJoinedRef = useRef(false);
+
+  useEffect(() => {
+    if (!currentRoom && !hasJoinedRef.current) {
+      hasJoinedRef.current = true;
+      joinRoom('battle-room');
+    }
+  }, [currentRoom]);
+
+  const players = currentRoom?.players || [];
+  const score = currentRoom?.score || { red: 0, blue: 0 };
+  const totalRounds = currentRoom?.totalRounds || roomSettings.totalRounds;
+  const currentRound = currentRoom?.currentRound || 1;
+  const roundTime = currentRoom?.roundTime || roomSettings.roundTime;
+  const respawnTime = roomSettings.respawnTime;
 
   const me = players.find(p => p.id === myPlayerId) || players[0];
-  const myTeam = me.team || 'red';
+  const myTeam = me?.team || 'red';
 
-  // 游戏计时器
+  const addMessage = useCallback((text: string, type: string) => {
+    const msg = { id: 'msg-' + Date.now(), text, type };
+    setMessages(prev => [...prev.slice(-4), msg]);
+    addStoreMessage(text, type as any);
+    
+    setTimeout(() => {
+      setMessages(prev => prev.filter(m => m.id !== msg.id));
+    }, 4000);
+  }, [addStoreMessage]);
+
   useEffect(() => {
-    if (isPaused || gameEnded) return;
+    setLocalGameTime(roundTime);
+  }, [roundTime]);
+
+  useEffect(() => {
+    if (isPaused || gameEnded || !currentRoom) return;
     
     const timer = setInterval(() => {
-      setGameTime(prev => {
+      setLocalGameTime(prev => {
         if (prev <= 1) {
           setGameEnded(true);
           addMessage('游戏结束！', 'system');
@@ -37,9 +76,8 @@ const BattlePage: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPaused, gameEnded]);
+  }, [isPaused, gameEnded, currentRoom, addMessage]);
 
-  // 冷却计时
   useEffect(() => {
     if (isPaused) return;
     
@@ -56,138 +94,114 @@ const BattlePage: React.FC = () => {
     return () => clearInterval(timer);
   }, [isPaused]);
 
-  // 模拟玩家移动
   useEffect(() => {
-    if (isPaused || gameEnded) return;
+    if (isPaused || gameEnded || !currentRoom) return;
 
     const moveInterval = setInterval(() => {
-      setPlayers(prev => prev.map(p => {
-        if (!p.isAlive) return p;
+      players.forEach(p => {
+        if (!p.isAlive) return;
         const dx = (Math.random() - 0.5) * 6;
         const dy = (Math.random() - 0.5) * 6;
-        return {
-          ...p,
+        updatePlayerGameData(p.id, {
           position: {
             x: Math.max(5, Math.min(95, p.position.x + dx)),
             y: Math.max(5, Math.min(95, p.position.y + dy))
           }
-        };
-      }));
+        });
+      });
     }, 1500);
 
     return () => clearInterval(moveInterval);
-  }, [isPaused, gameEnded]);
+  }, [isPaused, gameEnded, currentRoom, players, updatePlayerGameData]);
 
-  // 模拟夺旗
   useEffect(() => {
-    if (isPaused || gameEnded) return;
+    if (isPaused || gameEnded || !currentRoom) return;
 
     const flagInterval = setInterval(() => {
       if (Math.random() > 0.85) {
         const scoringTeam = Math.random() > 0.5 ? 'red' : 'blue';
-        setScore(prev => ({
-          ...prev,
-          [scoringTeam]: prev[scoringTeam as keyof typeof prev] + 1
-        }));
+        updateScore(scoringTeam, 1);
         addMessage(`${scoringTeam === 'red' ? '红队' : '蓝队'}夺得旗帜！`, 'system');
         
-        // 增加对应队玩家的夺旗数
-        setPlayers(prev => prev.map(p => {
-          if (p.team === scoringTeam && p.isAlive) {
-            return { ...p, flagsCaptured: p.flagsCaptured + 1, score: p.score + 30 };
-          }
-          return p;
-        }));
+        const scoringPlayer = players.find(p => p.team === scoringTeam && p.isAlive);
+        if (scoringPlayer) {
+          updatePlayerGameData(scoringPlayer.id, {
+            flagsCaptured: scoringPlayer.flagsCaptured + 1,
+            score: scoringPlayer.score + 30
+          });
+        }
       }
     }, 8000);
 
     return () => clearInterval(flagInterval);
-  }, [isPaused, gameEnded]);
+  }, [isPaused, gameEnded, currentRoom, players, updateScore, updatePlayerGameData, addMessage]);
 
-  // 模拟击杀
   useEffect(() => {
-    if (isPaused || gameEnded) return;
+    if (isPaused || gameEnded || !currentRoom) return;
 
     const killInterval = setInterval(() => {
       if (Math.random() > 0.7) {
-        setPlayers(prev => {
-          const alivePlayers = prev.filter(p => p.isAlive);
-          if (alivePlayers.length < 4) return prev;
-          
-          const killer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-          let victim = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-          
-          // 确保不是队友
-          while (victim.team === killer.team) {
-            victim = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-          }
-          
-          if (victim.hasShield) {
-            addMessage(`${victim.name}的护盾挡住了攻击！`, 'info');
-            return prev.map(p => 
-              p.id === victim.id ? { ...p, hasShield: false } : p
-            );
-          }
-          
-          addMessage(`${killer.name} 击杀了 ${victim.name}`, 'info');
-          
-          return prev.map(p => {
-            if (p.id === killer.id) {
-              return { ...p, kills: p.kills + 1, score: p.score + 20 };
-            }
-            if (p.id === victim.id) {
-              return { 
-                ...p, 
-                isAlive: false, 
-                deaths: p.deaths + 1,
-                respawnTime: 10
-              };
-            }
-            return p;
-          });
+        const alivePlayers = players.filter(p => p.isAlive);
+        if (alivePlayers.length < 4) return;
+        
+        const killer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+        let victim = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+        
+        while (victim.team === killer.team) {
+          victim = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+        }
+        
+        if (victim.hasShield) {
+          addMessage(`${victim.name}的护盾挡住了攻击！`, 'info');
+          updatePlayerGameData(victim.id, { hasShield: false });
+          return;
+        }
+        
+        addMessage(`${killer.name} 击杀了 ${victim.name}`, 'info');
+        
+        updatePlayerGameData(killer.id, {
+          kills: killer.kills + 1,
+          score: killer.score + 20
+        });
+        
+        updatePlayerGameData(victim.id, {
+          isAlive: false,
+          deaths: victim.deaths + 1,
+          respawnTime: respawnTime
         });
       }
     }, 5000);
 
     return () => clearInterval(killInterval);
-  }, [isPaused, gameEnded]);
+  }, [isPaused, gameEnded, currentRoom, players, respawnTime, updatePlayerGameData, addMessage]);
 
-  // 复活计时
   useEffect(() => {
-    if (isPaused || gameEnded) return;
+    if (isPaused || gameEnded || !currentRoom) return;
 
     const respawnTimer = setInterval(() => {
-      setPlayers(prev => prev.map(p => {
+      players.forEach(p => {
         if (!p.isAlive && p.respawnTime > 0) {
           const newTime = p.respawnTime - 1;
           if (newTime <= 0) {
             addMessage(`${p.name} 复活了！`, 'info');
-            return { 
-              ...p, 
-              isAlive: true, 
+            updatePlayerGameData(p.id, {
+              isAlive: true,
               respawnTime: 0,
-              position: p.team === 'red' 
+              hasShield: false,
+              isSlowdown: false,
+              position: p.team === 'red'
                 ? { x: 15 + Math.random() * 10, y: 40 + Math.random() * 20 }
                 : { x: 75 + Math.random() * 10, y: 40 + Math.random() * 20 }
-            };
+            });
+          } else {
+            updatePlayerGameData(p.id, { respawnTime: newTime });
           }
-          return { ...p, respawnTime: newTime };
         }
-        return p;
-      }));
+      });
     }, 1000);
 
     return () => clearInterval(respawnTimer);
-  }, [isPaused, gameEnded]);
-
-  const addMessage = useCallback((text: string, type: string) => {
-    const msg = { id: 'msg-' + Date.now(), text, type };
-    setMessages(prev => [...prev.slice(-4), msg]);
-    
-    setTimeout(() => {
-      setMessages(prev => prev.filter(m => m.id !== msg.id));
-    }, 4000);
-  }, []);
+  }, [isPaused, gameEnded, currentRoom, players, updatePlayerGameData, addMessage]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -196,7 +210,7 @@ const BattlePage: React.FC = () => {
   };
 
   const handleUseItem = (itemId: string) => {
-    if (gameEnded) return;
+    if (gameEnded || !me) return;
     if (itemCooldowns[itemId] > 0) {
       Taro.showToast({ title: '冷却中', icon: 'none' });
       return;
@@ -206,17 +220,19 @@ const BattlePage: React.FC = () => {
     if (!item) return;
 
     if (item.type === 'shield') {
-      setPlayers(prev => prev.map(p => 
-        p.id === myPlayerId ? { ...p, hasShield: true } : p
-      ));
+      updatePlayerGameData(myPlayerId, { hasShield: true });
       addMessage('护盾已激活！', 'team');
     } else if (item.type === 'slowdown') {
-      setPlayers(prev => prev.map(p => 
-        p.id !== myPlayerId && p.team !== myTeam ? { ...p, isSlowdown: true } : p
-      ));
+      players.forEach(p => {
+        if (p.id !== myPlayerId && p.team !== myTeam) {
+          updatePlayerGameData(p.id, { isSlowdown: true });
+        }
+      });
       addMessage('减速陷阱已释放！', 'team');
       setTimeout(() => {
-        setPlayers(prev => prev.map(p => ({ ...p, isSlowdown: false })));
+        players.forEach(p => {
+          updatePlayerGameData(p.id, { isSlowdown: false });
+        });
       }, 5000);
     }
 
@@ -253,9 +269,18 @@ const BattlePage: React.FC = () => {
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
+  if (!currentRoom || players.length === 0) {
+    return (
+      <View className={styles.battlePage}>
+        <View style={{ padding: 100, textAlign: 'center' }}>
+          <Text style={{ fontSize: 32, color: '#F1F5F9' }}>加载中...</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View className={styles.battlePage}>
-      {/* 顶部比分板 */}
       <View className={styles.topBar}>
         <View className={styles.scoreBoard}>
           <View className={classnames(styles.teamScore, styles.redTeam)}>
@@ -264,8 +289,8 @@ const BattlePage: React.FC = () => {
           </View>
           
           <View className={styles.centerInfo}>
-            <Text className={styles.timer}>{formatTime(gameTime)}</Text>
-            <Text className={styles.roundInfo}>第 1 / 3 局</Text>
+            <Text className={styles.timer}>{formatTime(localGameTime)}</Text>
+            <Text className={styles.roundInfo}>第 {currentRound} / {totalRounds} 局</Text>
           </View>
           
           <View className={classnames(styles.teamScore, styles.blueTeam)}>
@@ -275,11 +300,10 @@ const BattlePage: React.FC = () => {
         </View>
       </View>
 
-      {/* 消息提示 */}
       <View className={styles.messageLog}>
         {messages.map(msg => (
-          <View 
-            key={msg.id} 
+          <View
+            key={msg.id}
             className={classnames(
               styles.messageItem,
               msg.type === 'team' && styles.teamMsg,
@@ -292,58 +316,55 @@ const BattlePage: React.FC = () => {
         ))}
       </View>
 
-      {/* 游戏地图 */}
       <View className={styles.gameMapContainer}>
         <View className={styles.gameMap}>
           <View className={styles.mapGrid}></View>
           
           {isSpectator && <View className={styles.spectatorBadge}>👁️ 观战中</View>}
 
-          {/* 出生点区域 */}
-          <View 
-            className={classnames(styles.spawnZone, styles.redZone)} 
+          <View
+            className={classnames(styles.spawnZone, styles.redZone)}
             style={{ left: '15%', top: '50%', width: '25%', height: '40%' }}
           ></View>
-          <View 
-            className={classnames(styles.spawnZone, styles.blueZone)} 
+          <View
+            className={classnames(styles.spawnZone, styles.blueZone)}
             style={{ left: '85%', top: '50%', width: '25%', height: '40%' }}
           ></View>
 
-          {/* 旗帜 */}
-          <View 
-            className={classnames(styles.flag, styles.redFlag)} 
-            style={{ left: '15%', top: '50%' }}
+          <View
+            className={classnames(styles.flag, styles.redFlag)}
+            style={{ left: `${currentMap?.flagPositions.red.x || 15}%`, top: `${currentMap?.flagPositions.red.y || 50}%` }}
           >
             🚩
           </View>
-          <View 
-            className={classnames(styles.flag, styles.blueFlag)} 
-            style={{ left: '85%', top: '50%' }}
+          <View
+            className={classnames(styles.flag, styles.blueFlag)}
+            style={{ left: `${currentMap?.flagPositions.blue.x || 85}%`, top: `${currentMap?.flagPositions.blue.y || 50}%` }}
           >
             🚩
           </View>
-          <View 
-            className={classnames(styles.flag, styles.neutralFlag)} 
-            style={{ left: '50%', top: '50%' }}
-          >
-            🏳️
-          </View>
+          {currentMap?.flagPositions.neutral && (
+            <View
+              className={classnames(styles.flag, styles.neutralFlag)}
+              style={{ left: `${currentMap.flagPositions.neutral.x}%`, top: `${currentMap.flagPositions.neutral.y}%` }}
+            >
+              🏳️
+            </View>
+          )}
 
-          {/* 占点 */}
-          <View 
-            className={classnames(styles.capturePoint, styles.capturedRed)} 
-            style={{ left: '35%', top: '30%' }}
-          >
-            ⭐
-          </View>
-          <View 
-            className={classnames(styles.capturePoint, styles.capturedBlue)} 
-            style={{ left: '65%', top: '70%' }}
-          >
-            ⭐
-          </View>
+          {currentMap?.capturePoints?.map((cp, idx) => (
+            <View
+              key={cp.id}
+              className={classnames(
+                styles.capturePoint,
+                idx % 2 === 0 ? styles.capturedRed : styles.capturedBlue
+              )}
+              style={{ left: `${cp.x}%`, top: `${cp.y}%` }}
+            >
+              ⭐
+            </View>
+          ))}
 
-          {/* 玩家 */}
           {players.map(player => (
             <View
               key={player.id}
@@ -365,13 +386,12 @@ const BattlePage: React.FC = () => {
         </View>
       </View>
 
-      {/* 底部道具栏 */}
       <View className={styles.bottomBar}>
         <View className={styles.itemBar}>
           {items.slice(0, 4).map(item => (
             <View
               key={item.id}
-              className={classnames(styles.itemSlot, { [styles.active]: itemCooldowns[item.id] === 0 })}
+              className={classnames(styles.itemSlot, { [styles.active]: itemCooldowns[item.id] === 0 || itemCooldowns[item.id] === undefined }}
               onClick={() => handleUseItem(item.id)}
             >
               <Text className={styles.itemIcon}>{item.icon}</Text>
@@ -386,20 +406,20 @@ const BattlePage: React.FC = () => {
         </View>
 
         <View className={styles.actionButtons}>
-          <Button 
-            className={classnames(styles.actionBtn, styles.secondary)} 
+          <Button
+            className={classnames(styles.actionBtn, styles.secondary)}
             onClick={() => setShowStats(true)}
           >
             📊 战绩
           </Button>
-          <Button 
-            className={classnames(styles.actionBtn, styles.secondary)} 
+          <Button
+            className={classnames(styles.actionBtn, styles.secondary)}
             onClick={toggleSpectator}
           >
             {isSpectator ? '🎮 参战' : '👁️ 观战'}
           </Button>
-          <Button 
-            className={classnames(styles.actionBtn, styles.primary)} 
+          <Button
+            className={classnames(styles.actionBtn, styles.primary)}
             onClick={handlePause}
           >
             ⏸️ 暂停
@@ -407,8 +427,7 @@ const BattlePage: React.FC = () => {
         </View>
       </View>
 
-      {/* 复活覆盖层 */}
-      {!me.isAlive && !gameEnded && (
+      {me && !me.isAlive && !gameEnded && (
         <View className={styles.respawnOverlay}>
           <Text className={styles.respawnText}>💀 你被击杀了</Text>
           <Text className={styles.respawnTimer}>{me.respawnTime}</Text>
@@ -416,7 +435,6 @@ const BattlePage: React.FC = () => {
         </View>
       )}
 
-      {/* 暂停覆盖层 */}
       {isPaused && !gameEnded && (
         <View className={styles.pauseOverlay}>
           <Text className={styles.pauseIcon}>⏸️</Text>
@@ -424,8 +442,8 @@ const BattlePage: React.FC = () => {
           <Text className={styles.pauseReason}>违规暂停 · 等待房主继续</Text>
           {currentRoom?.hostId === myPlayerId && (
             <View className={styles.pauseActions}>
-              <Button 
-                className={classnames(styles.actionBtn, styles.primary)} 
+              <Button
+                className={classnames(styles.actionBtn, styles.primary)}
                 onClick={handleResume}
                 style={{ flex: 1 }}
               >
@@ -436,7 +454,6 @@ const BattlePage: React.FC = () => {
         </View>
       )}
 
-      {/* 游戏结束 */}
       {gameEnded && (
         <View className={styles.pauseOverlay}>
           <Text className={styles.pauseIcon}>🏆</Text>
@@ -447,8 +464,8 @@ const BattlePage: React.FC = () => {
             最终比分 {score.red} : {score.blue}
           </Text>
           <View className={styles.pauseActions}>
-            <Button 
-              className={classnames(styles.actionBtn, styles.primary)} 
+            <Button
+              className={classnames(styles.actionBtn, styles.primary)}
               onClick={handleEndGame}
               style={{ flex: 1 }}
             >
@@ -458,10 +475,9 @@ const BattlePage: React.FC = () => {
         </View>
       )}
 
-      {/* 战绩弹窗 */}
       {showStats && (
         <>
-          <View 
+          <View
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 399 }}
             onClick={() => setShowStats(false)}
           />

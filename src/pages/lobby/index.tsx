@@ -98,6 +98,30 @@ const LobbyPage: React.FC = () => {
       </View>
 
       <View className={styles.sectionTitle}>
+        <Text className={styles.icon}>🎯</Text>
+        <Text>功能入口</Text>
+      </View>
+
+      <View className={styles.quickGrid}>
+        <View 
+          className={styles.quickCard}
+          onClick={() => Taro.navigateTo({ url: '/pages/map/index' })}
+        >
+          <Text className={styles.quickIcon}>🗺️</Text>
+          <Text className={styles.quickTitle}>地图中心</Text>
+          <Text className={styles.quickDesc}>浏览战场详情</Text>
+        </View>
+        <View 
+          className={styles.quickCard}
+          onClick={() => Taro.navigateTo({ url: '/pages/item/index' })}
+        >
+          <Text className={styles.quickIcon}>🎒</Text>
+          <Text className={styles.quickTitle}>道具中心</Text>
+          <Text className={styles.quickDesc}>掌握道具技巧</Text>
+        </View>
+      </View>
+
+      <View className={styles.sectionTitle}>
         <Text className={styles.icon}>🔥</Text>
         <Text>热门房间</Text>
       </View>

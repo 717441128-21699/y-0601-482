@@ -6,14 +6,21 @@ import { useGameStore } from '@/store/gameStore';
 import classnames from 'classnames';
 
 const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, activityCode } = useGameStore();
+  const { 
+    settings, 
+    roomSettings,
+    updateSettings,
+    updateRoomSettings,
+    activityCode,
+    setActivityCode
+  } = useGameStore();
   
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [showRespawnModal, setShowRespawnModal] = useState(false);
-  const [rounds, setRounds] = useState(3);
-  const [gameTime, setGameTime] = useState(10);
-  const [respawnTime, setRespawnTime] = useState(10);
+  const [rounds, setRounds] = useState(roomSettings.totalRounds);
+  const [gameTime, setGameTime] = useState(Math.floor(roomSettings.roundTime / 60));
+  const [respawnTime, setRespawnTime] = useState(roomSettings.respawnTime);
   const [inputCode, setInputCode] = useState('');
 
   const toggleSound = () => {
@@ -41,18 +48,26 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleConfirmRounds = () => {
+    updateRoomSettings({ totalRounds: rounds });
+    updateSettings({ respawnTime: settings.respawnTime });
     setShowRoundModal(false);
     Taro.showToast({ title: `已设置 ${rounds} 局`, icon: 'success' });
+    console.log('[Settings] Rounds updated:', rounds);
   };
 
   const handleConfirmTime = () => {
+    updateRoomSettings({ roundTime: gameTime * 60 });
     setShowTimeModal(false);
     Taro.showToast({ title: `已设置 ${gameTime} 分钟`, icon: 'success' });
+    console.log('[Settings] Game time updated:', gameTime);
   };
 
   const handleConfirmRespawn = () => {
+    updateRoomSettings({ respawnTime });
+    updateSettings({ respawnTime });
     setShowRespawnModal(false);
     Taro.showToast({ title: `复活时间 ${respawnTime} 秒`, icon: 'success' });
+    console.log('[Settings] Respawn time updated:', respawnTime);
   };
 
   const handleVerifyCode = () => {
@@ -60,6 +75,7 @@ const SettingsPage: React.FC = () => {
       Taro.showToast({ title: '请输入口令', icon: 'none' });
       return;
     }
+    setActivityCode(inputCode);
     Taro.showToast({ title: '口令验证成功', icon: 'success' });
     console.log('[Settings] Activity code verified:', inputCode);
   };
