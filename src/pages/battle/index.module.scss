@@ -167,6 +167,30 @@
       }
     }
 
+    &.hasSpeed {
+      animation: speedGlow 0.8s ease-in-out infinite alternate;
+      
+      &::before {
+        content: '⚡';
+        position: absolute;
+        top: -20rpx;
+        right: -10rpx;
+        font-size: 24rpx;
+      }
+    }
+
+    &.isSlowdown {
+      filter: hue-rotate(180deg) brightness(0.8);
+      
+      &::before {
+        content: '🐌';
+        position: absolute;
+        top: -20rpx;
+        left: -10rpx;
+        font-size: 24rpx;
+      }
+    }
+
     &.dead {
       opacity: 0.3;
       filter: grayscale(1);
@@ -183,6 +207,35 @@
   @keyframes shieldPulse {
     0%, 100% { opacity: 0.6; transform: scale(1); }
     50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  @keyframes speedGlow {
+    0% { box-shadow: 0 0 10rpx $color-gold; }
+    100% { box-shadow: 0 0 30rpx $color-gold; }
+  }
+
+  .effectTimer {
+    position: absolute;
+    bottom: -28rpx;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 20rpx;
+    padding: 2rpx 10rpx;
+    border-radius: 10rpx;
+    white-space: nowrap;
+    font-weight: $font-weight-semibold;
+    z-index: 15;
+
+    &.speedTimer {
+      background: rgba(255, 193, 7, 0.9);
+      color: #000;
+    }
+
+    &.slowTimer {
+      background: rgba(155, 89, 182, 0.9);
+    }
   }
 
   .capturePoint {
@@ -244,6 +297,13 @@
   display: flex;
   justify-content: center;
   gap: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.noItemsHint {
+  text-align: center;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
   margin-bottom: $spacing-md;
 }
 
@@ -421,7 +481,32 @@
   .pauseReason {
     font-size: $font-size-sm;
     color: $color-text-secondary;
+    margin-bottom: $spacing-md;
+  }
+
+  .mvpLine {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: $spacing-xl;
+
+    .mvpLabel {
+      font-size: $font-size-sm;
+      color: $color-gold;
+      font-weight: $font-weight-semibold;
+    }
+
+    .mvpName {
+      font-size: $font-size-md;
+      color: $color-text-primary;
+      font-weight: $font-weight-bold;
+      margin: 0 4rpx;
+    }
+
+    .mvpScore {
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+    }
   }
 
   .pauseActions {
@@ -481,6 +566,16 @@
       .team {
         font-size: $font-size-xs;
         color: $color-text-tertiary;
+      }
+
+      .statusIcons {
+        display: flex;
+        gap: 4rpx;
+        margin-top: 4rpx;
+
+        .statusIcon {
+          font-size: 22rpx;
+        }
       }
     }
 

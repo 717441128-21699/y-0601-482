@@ -21,23 +21,13 @@ const MapPage: React.FC = () => {
     }
   };
 
-  const getDifficulty = (mapId: string) => {
-    switch (mapId) {
-      case 'map1': return { text: '简单', level: 1 };
-      case 'map2': return { text: '困难', level: 3 };
-      case 'map3': return { text: '中等', level: 2 };
-      case 'map4': return { text: '地狱', level: 4 };
-      default: return { text: '未知', level: 0 };
-    }
-  };
-
-  const getPlayerCount = (mapId: string) => {
-    switch (mapId) {
-      case 'map1': return '4-10人';
-      case 'map2': return '6-16人';
-      case 'map3': return '4-12人';
-      case 'map4': return '6-12人';
-      default: return '4-10人';
+  const getDifficultyText = (level: number) => {
+    switch (level) {
+      case 1: return '简单';
+      case 2: return '中等';
+      case 3: return '困难';
+      case 4: return '地狱';
+      default: return '未知';
     }
   };
 
@@ -61,7 +51,6 @@ const MapPage: React.FC = () => {
 
       <View className={styles.mapGrid}>
         {maps.map(map => {
-          const difficulty = getDifficulty(map.id);
           const isSelected = currentMap?.id === map.id;
           
           return (
@@ -75,7 +64,7 @@ const MapPage: React.FC = () => {
               >
                 <Text className={styles.mapIcon}>{getMapIcon(map.id)}</Text>
                 <View className={styles.difficultyBadge}>
-                  {'⭐'.repeat(difficulty.level)} {difficulty.text}
+                  {'⭐'.repeat(map.difficulty)} {getDifficultyText(map.difficulty)}
                 </View>
                 {isSelected && <View className={styles.mapBadge}>已选择</View>}
               </View>
@@ -83,7 +72,7 @@ const MapPage: React.FC = () => {
               <View className={styles.mapInfo}>
                 <View className={styles.mapHeader}>
                   <Text className={styles.mapName}>{map.name}</Text>
-                  <Text className={styles.playerCount}>👥 {getPlayerCount(map.id)}</Text>
+                  <Text className={styles.playerCount}>👥 {map.maxPlayers}人</Text>
                 </View>
                 <Text className={styles.mapDesc}>{map.description}</Text>
                 <View className={styles.mapStats}>
@@ -173,12 +162,12 @@ const MapPage: React.FC = () => {
                 <View className={styles.infoRow}>
                   <Text className={styles.label}>难度等级</Text>
                   <Text className={styles.value}>
-                    {'⭐'.repeat(getDifficulty(selectedMap.id).level)} {getDifficulty(selectedMap.id).text}
+                    {'⭐'.repeat(selectedMap.difficulty)} {getDifficultyText(selectedMap.difficulty)}
                   </Text>
                 </View>
                 <View className={styles.infoRow}>
-                  <Text className={styles.label}>推荐人数</Text>
-                  <Text className={styles.value}>{getPlayerCount(selectedMap.id)}</Text>
+                  <Text className={styles.label}>最大人数</Text>
+                  <Text className={styles.value}>{selectedMap.maxPlayers} 人</Text>
                 </View>
                 <View className={styles.infoRow}>
                   <Text className={styles.label}>旗帜数量</Text>

@@ -2,16 +2,23 @@
 
 .itemPage {
   min-height: 100vh;
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.scrollContent {
+  flex: 1;
   padding: $page-padding;
   padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+  height: 100vh;
 }
 
 .pageHeader {
   text-align: center;
-  margin-bottom: $spacing-xl;
-  padding-top: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  padding-top: $spacing-md;
 
   .title {
     font-size: $font-size-xxl;
@@ -29,10 +36,94 @@
   }
 }
 
+.loadoutSection {
+  background: $color-bg-card;
+  border-radius: $radius-xl;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  border: 1px solid $color-border;
+}
+
+.loadoutHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+
+  .loadoutTitle {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+
+  .loadoutCount {
+    font-size: $font-size-md;
+    color: $color-primary-light;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.loadoutSlots {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.loadoutSlot {
+  flex: 1;
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed $color-border;
+  border-radius: $radius-lg;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-base;
+
+  &.filled {
+    background: linear-gradient(135deg, rgba(22, 93, 255, 0.2) 0%, rgba(255, 125, 0, 0.15) 100%);
+    border: 2px solid $color-primary-light;
+  }
+
+  .loadoutIcon {
+    font-size: 48rpx;
+    margin-bottom: 4rpx;
+  }
+
+  .loadoutName {
+    font-size: $font-size-xs;
+    color: $color-text-primary;
+    font-weight: $font-weight-medium;
+  }
+
+  .emptySlot {
+    font-size: 48rpx;
+    color: $color-text-tertiary;
+  }
+}
+
+.confirmBtn {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-md;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: white;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  box-shadow: $glow-blue;
+
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
 .tabs {
   display: flex;
-  gap: $spacing-md;
-  margin-bottom: $spacing-lg;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
   background: $color-bg-card;
   border-radius: $radius-xl;
   padding: 8rpx;
@@ -44,15 +135,29 @@
   padding: $spacing-sm 0;
   text-align: center;
   border-radius: $radius-lg;
-  font-size: $font-size-md;
-  font-weight: $font-weight-semibold;
-  color: $color-text-secondary;
   transition: all $transition-base;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+
+  .tabIcon {
+    font-size: 32rpx;
+  }
+
+  .tabLabel {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-text-secondary;
+  }
 
   &.active {
     background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
-    color: white;
     box-shadow: $glow-blue;
+
+    .tabLabel {
+      color: white;
+    }
   }
 }
 
@@ -69,134 +174,190 @@
   border: 1px solid $color-border;
   transition: all $transition-base;
 
+  &.selected {
+    border-color: $color-primary-light;
+    background: linear-gradient(135deg, rgba(22, 93, 255, 0.1) 0%, rgba(255, 125, 0, 0.05) 100%);
+  }
+
   &:active {
     transform: scale(0.98);
   }
 
   .itemHeader {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: $spacing-md;
     margin-bottom: $spacing-md;
+  }
 
-    .itemIcon {
-      width: 120rpx;
-      height: 120rpx;
-      background: linear-gradient(135deg, rgba(22, 93, 255, 0.3) 0%, rgba(255, 125, 0, 0.25) 100%);
-      border-radius: $radius-lg;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 60rpx;
-      flex-shrink: 0;
+  .itemIconWrapper {
+    position: relative;
+    width: 96rpx;
+    height: 96rpx;
+    background: linear-gradient(135deg, rgba(22, 93, 255, 0.3) 0%, rgba(255, 125, 0, 0.25) 100%);
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .itemIcon {
+    font-size: 48rpx;
+  }
+
+  .selectedBadge {
+    position: absolute;
+    top: -8rpx;
+    right: -8rpx;
+    width: 36rpx;
+    height: 36rpx;
+    background: $color-success;
+    border-radius: 50%;
+    color: white;
+    font-size: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: $font-weight-bold;
+  }
+
+  .itemInfo {
+    flex: 1;
+  }
+
+  .itemNameRow {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: 4rpx;
+  }
+
+  .itemName {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+
+  .itemType {
+    padding: 4rpx 12rpx;
+    border-radius: $radius-round;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+
+    &.attack {
+      background: rgba(224, 84, 84, 0.2);
+      color: $color-red;
     }
 
-    .itemInfo {
-      flex: 1;
+    &.defense {
+      background: rgba(22, 93, 255, 0.2);
+      color: $color-primary-light;
+    }
 
-      .itemName {
-        font-size: $font-size-xl;
-        font-weight: $font-weight-bold;
-        color: $color-text-primary;
-        margin-bottom: 4rpx;
-      }
+    &.utility {
+      background: rgba(255, 125, 0, 0.2);
+      color: $color-gold;
+    }
 
-      .itemType {
-        display: inline-block;
-        padding: 4rpx 16rpx;
-        border-radius: $radius-round;
-        font-size: $font-size-xs;
-        font-weight: $font-weight-medium;
-
-        &.attack {
-          background: rgba(224, 84, 84, 0.2);
-          color: $color-red;
-        }
-
-        &.defense {
-          background: rgba(22, 93, 255, 0.2);
-          color: $color-primary-light;
-        }
-
-        &.utility {
-          background: rgba(255, 125, 0, 0.2);
-          color: $color-gold;
-        }
-
-        &.trap {
-          background: rgba(155, 89, 182, 0.2);
-          color: #c084fc;
-        }
-      }
-
-      .itemRarity {
-        margin-top: 4rpx;
-        display: flex;
-        align-items: center;
-        gap: 4rpx;
-
-        .star {
-          color: $color-gold;
-          font-size: $font-size-sm;
-        }
-
-        .rarityText {
-          font-size: $font-size-xs;
-          color: $color-text-tertiary;
-          margin-left: 4rpx;
-        }
-      }
+    &.trap {
+      background: rgba(155, 89, 182, 0.2);
+      color: #c084fc;
     }
   }
 
-  .itemDesc {
+  .itemRarity {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+  }
+
+  .star {
+    color: $color-gold;
+    font-size: $font-size-sm;
+  }
+
+  .rarityText {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+  }
+
+  .selectBtn {
+    padding: $spacing-xs $spacing-md;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: $radius-round;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    flex-shrink: 0;
+    transition: all $transition-base;
+
+    &.selected {
+      background: $color-success;
+      color: white;
+    }
+  }
+}
+
+.itemDesc {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.6;
+  margin-bottom: $spacing-md;
+}
+
+.itemStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  .statItem {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: $radius-md;
+    padding: $spacing-sm;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4rpx;
+  }
+
+  .statIcon {
+    font-size: 28rpx;
+  }
+
+  .statValue {
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $color-primary-light;
+  }
+
+  .statLabel {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+  }
+}
+
+.itemTips {
+  background: rgba(255, 125, 0, 0.1);
+  border-left: 4rpx solid $color-gold;
+  padding: $spacing-sm $spacing-md;
+  border-radius: 0 $radius-md $radius-md 0;
+  display: flex;
+  gap: 8rpx;
+  align-items: flex-start;
+
+  .tipsIcon {
+    flex-shrink: 0;
+    font-size: $font-size-md;
+  }
+
+  .tipsText {
+    flex: 1;
     font-size: $font-size-sm;
     color: $color-text-secondary;
-    line-height: 1.6;
-    margin-bottom: $spacing-md;
-  }
-
-  .itemStats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: $spacing-sm;
-    margin-bottom: $spacing-md;
-
-    .statItem {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: $radius-md;
-      padding: $spacing-sm;
-      text-align: center;
-
-      .statLabel {
-        font-size: $font-size-xs;
-        color: $color-text-tertiary;
-        margin-bottom: 4rpx;
-      }
-
-      .statValue {
-        font-size: $font-size-md;
-        font-weight: $font-weight-bold;
-        color: $color-primary-light;
-      }
-    }
-  }
-
-  .itemTips {
-    background: rgba(255, 125, 0, 0.1);
-    border-left: 4rpx solid $color-gold;
-    padding: $spacing-sm $spacing-md;
-    border-radius: 0 $radius-md $radius-md 0;
-
-    .tipsIcon {
-      margin-right: 8rpx;
-    }
-
-    .tipsText {
-      font-size: $font-size-sm;
-      color: $color-text-secondary;
-      line-height: 1.5;
-    }
+    line-height: 1.5;
   }
 }
 
@@ -221,6 +382,8 @@
   max-height: 85vh;
   overflow: hidden;
   border: 1px solid $color-border;
+  display: flex;
+  flex-direction: column;
 }
 
 .detailHeader {
@@ -229,6 +392,7 @@
   align-items: center;
   padding: $spacing-lg;
   border-bottom: 1px solid $color-divider;
+  flex-shrink: 0;
 
   .title {
     font-size: $font-size-xl;
@@ -244,21 +408,38 @@
 }
 
 .detailBody {
+  flex: 1;
   padding: $spacing-lg;
-  max-height: 60vh;
   overflow-y: auto;
 }
 
-.detailIcon {
+.detailIconWrapper {
+  position: relative;
   width: 160rpx;
   height: 160rpx;
+  margin: 0 auto $spacing-lg;
   background: linear-gradient(135deg, rgba(22, 93, 255, 0.3) 0%, rgba(255, 125, 0, 0.25) 100%);
   border-radius: $radius-xl;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.detailIcon {
   font-size: 80rpx;
-  margin: 0 auto $spacing-lg;
+}
+
+.detailRarity {
+  position: absolute;
+  bottom: -10rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4rpx 16rpx;
+  border-radius: $radius-round;
+  font-size: $font-size-xs;
+  color: $color-gold;
+  white-space: nowrap;
 }
 
 .detailName {
@@ -299,23 +480,23 @@
     padding: $spacing-md;
     text-align: center;
     border: 1px solid $color-border;
+  }
 
-    .statIcon {
-      font-size: 40rpx;
-      margin-bottom: 8rpx;
-    }
+  .statIcon {
+    font-size: 40rpx;
+    margin-bottom: 8rpx;
+  }
 
-    .statValue {
-      font-size: $font-size-xl;
-      font-weight: $font-weight-bold;
-      color: $color-primary-light;
-      margin-bottom: 4rpx;
-    }
+  .statValue {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-primary-light;
+    margin-bottom: 4rpx;
+  }
 
-    .statLabel {
-      font-size: $font-size-xs;
-      color: $color-text-tertiary;
-    }
+  .statLabel {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
   }
 }
 
@@ -342,11 +523,6 @@
     font-size: $font-size-sm;
     color: $color-text-secondary;
     line-height: 2;
-
-    li {
-      list-style-type: decimal;
-      list-style-position: inside;
-    }
   }
 }
 
@@ -354,6 +530,7 @@
   background: linear-gradient(135deg, rgba(255, 125, 0, 0.15) 0%, rgba(255, 193, 7, 0.15) 100%);
   border-radius: $radius-lg;
   padding: $spacing-md;
+  margin-bottom: $spacing-lg;
 
   .strategyTitle {
     font-size: $font-size-md;
@@ -372,10 +549,33 @@
     font-size: $font-size-sm;
     color: $color-text-secondary;
     line-height: 1.8;
+  }
+}
 
-    li {
-      list-style-type: disc;
-      list-style-position: inside;
-    }
+.detailFooter {
+  padding: $spacing-lg;
+  border-top: 1px solid $color-divider;
+  flex-shrink: 0;
+}
+
+.selectBtnLarge {
+  @include button-reset;
+  width: 100%;
+  height: $button-height-lg;
+  background: rgba(255, 255, 255, 0.1);
+  color: $color-text-primary;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  transition: all $transition-base;
+
+  &.selected {
+    background: linear-gradient(135deg, $color-success 0%, #23c34a 100%);
+    color: white;
+  }
+
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
   }
 }

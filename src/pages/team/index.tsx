@@ -10,6 +10,8 @@ const TeamPage: React.FC = () => {
     currentRoom, 
     currentMap, 
     maps, 
+    items,
+    selectedItems,
     myPlayerId,
     roomSettings,
     toggleReady, 
@@ -81,6 +83,14 @@ const TeamPage: React.FC = () => {
     Taro.showToast({ title: '房间号已复制', icon: 'success' });
   };
 
+  const handleGoToMapPage = () => {
+    Taro.navigateTo({ url: '/pages/map/index' });
+  };
+
+  const handleGoToItemPage = () => {
+    Taro.navigateTo({ url: '/pages/item/index' });
+  };
+
   return (
     <ScrollView className={styles.teamPage} scrollY>
       <View className={styles.roomInfo}>
@@ -94,6 +104,7 @@ const TeamPage: React.FC = () => {
       <View className={styles.sectionTitle}>
         <Text className={styles.icon}>🗺️</Text>
         <Text>选择地图</Text>
+        <Text className={styles.moreLink} onClick={handleGoToMapPage}>查看全部 →</Text>
       </View>
 
       <ScrollView className={styles.mapSelector} scrollX>
@@ -114,6 +125,36 @@ const TeamPage: React.FC = () => {
           </View>
         ))}
       </ScrollView>
+
+      <View className={styles.sectionTitle}>
+        <Text className={styles.icon}>🎒</Text>
+        <Text>道具备战</Text>
+        <Text className={styles.moreLink} onClick={handleGoToItemPage}>编辑装备 →</Text>
+      </View>
+
+      <View className={styles.itemLoadout}>
+        {selectedItems.length === 0 ? (
+          <Text className={styles.noItemsText}>尚未选择出战道具，点击"编辑装备"选择最多4个道具</Text>
+        ) : (
+          <View className={styles.loadoutSlots}>
+            {selectedItems.map((itemId, idx) => {
+              const item = items.find(i => i.id === itemId);
+              if (!item) return null;
+              return (
+                <View key={itemId} className={styles.loadoutSlot}>
+                  <Text className={styles.loadoutIcon}>{item.icon}</Text>
+                  <Text className={styles.loadoutName}>{item.name}</Text>
+                </View>
+              );
+            })}
+            {Array.from({ length: Math.max(0, 4 - selectedItems.length) }).map((_, idx) => (
+              <View key={`empty-${idx}`} className={classnames(styles.loadoutSlot, styles.emptySlot)}>
+                <Text className={styles.emptySlotText}>空</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
 
       <View className={styles.sectionTitle}>
         <Text className={styles.icon}>⚔️</Text>

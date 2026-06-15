@@ -289,6 +289,12 @@
     font-size: $font-size-md;
     color: $color-text-tertiary;
   }
+
+  .emptySubtext {
+    font-size: $font-size-xs;
+    color: $color-text-disabled;
+    margin-top: 8rpx;
+  }
 }
 
 .detailModal {

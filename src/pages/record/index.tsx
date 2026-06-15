@@ -2,28 +2,37 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
-import { mockRecords } from '@/data/mockRecords';
+import { useGameStore } from '@/store/gameStore';
 import type { GameRecord } from '@/types/game';
 import classnames from 'classnames';
 
 const RecordPage: React.FC = () => {
+  const { gameRecords } = useGameStore();
   const [activeTab, setActiveTab] = useState<'all' | 'win' | 'mvp'>('all');
   const [selectedRecord, setSelectedRecord] = useState<GameRecord | null>(null);
 
-  const totalGames = mockRecords.length;
-  const winGames = mockRecords.filter(r => {
-    const myTeam = 'red';
-    return (r.winner === myTeam);
+  const myName = '张三';
+
+  const totalGames = gameRecords.length;
+  const winGames = gameRecords.filter(r => {
+    const myPlayer = r.players.find(p => p.playerName === myName);
+    if (!myPlayer) return false;
+    return r.winner === myPlayer.team;
   }).length;
-  const mvpCount = mockRecords.reduce((acc, r) => {
-    return acc + r.players.filter(p => p.isMvp && p.playerName === '张三').length;
+  const mvpCount = gameRecords.reduce((acc, r) => {
+    return acc + r.players.filter(p => p.isMvp && p.playerName === myName).length;
+  }, 0);
+  const totalKills = gameRecords.reduce((acc, r) => {
+    const me = r.players.find(p => p.playerName === myName);
+    return acc + (me?.kills || 0);
   }, 0);
   const winRate = totalGames > 0 ? Math.round((winGames / totalGames) * 100) : 0;
 
-  const filteredRecords = mockRecords.filter(r => {
+  const filteredRecords = gameRecords.filter(r => {
+    const myPlayer = r.players.find(p => p.playerName === myName);
     if (activeTab === 'all') return true;
-    if (activeTab === 'win') return r.winner === 'red';
-    if (activeTab === 'mvp') return r.players.some(p => p.isMvp && p.playerName === '张三');
+    if (activeTab === 'win') return myPlayer && r.winner === myPlayer.team;
+    if (activeTab === 'mvp') return r.players.some(p => p.isMvp && p.playerName === myName);
     return true;
   });
 
@@ -36,15 +45,17 @@ const RecordPage: React.FC = () => {
   };
 
   const getResultText = (record: GameRecord) => {
-    const myTeam = 'red';
+    const myPlayer = record.players.find(p => p.playerName === myName);
     if (record.winner === 'draw') return '平局';
-    return record.winner === myTeam ? '胜利' : '失败';
+    if (!myPlayer) return '未知';
+    return record.winner === myPlayer.team ? '胜利' : '失败';
   };
 
   const getResultClass = (record: GameRecord) => {
-    const myTeam = 'red';
+    const myPlayer = record.players.find(p => p.playerName === myName);
     if (record.winner === 'draw') return 'draw';
-    return record.winner === myTeam ? 'win' : 'lose';
+    if (!myPlayer) return 'lose';
+    return record.winner === myPlayer.team ? 'win' : 'lose';
   };
 
   const formatDuration = (seconds: number) => {
@@ -58,8 +69,7 @@ const RecordPage: React.FC = () => {
     console.log('[Record] View record detail:', record.id);
   };
 
-  // 找出MVP
-  const allMvpPlayers = mockRecords.flatMap(r => r.players.filter(p => p.isMvp));
+  const allMvpPlayers = gameRecords.flatMap(r => r.players.filter(p => p.isMvp));
   const topMvp = allMvpPlayers.reduce((acc, p) => {
     const existing = acc.find(a => a.playerId === p.playerId);
     if (existing) {
@@ -72,7 +82,6 @@ const RecordPage: React.FC = () => {
 
   return (
     <ScrollView className={styles.recordPage} scrollY>
-      {/* 个人统计总览 */}
       <View className={styles.statsOverview}>
         <Text className={styles.title}>📊 个人战绩总览</Text>
         <View className={styles.statsGrid}>
@@ -89,13 +98,12 @@ const RecordPage: React.FC = () => {
             <Text className={styles.statLabel}>MVP次数</Text>
           </View>
           <View className={styles.statItem}>
-            <Text className={styles.statValue}>42</Text>
+            <Text className={styles.statValue}>{totalKills}</Text>
             <Text className={styles.statLabel}>总击杀</Text>
           </View>
         </View>
       </View>
 
-      {/* MVP评选 */}
       <View className={styles.mvpSection}>
         <Text className={styles.sectionTitle}>
           <Text className={styles.icon}>🏆</Text>
@@ -105,15 +113,14 @@ const RecordPage: React.FC = () => {
           <View className={styles.mvpAvatar}>👑</View>
           <View className={styles.mvpInfo}>
             <Text className={styles.mvpTitle}>MVP 之王</Text>
-            <Text className={styles.mvpPlayer}>{topMvp?.playerName || '张三'}</Text>
+            <Text className={styles.mvpPlayer}>{topMvp?.playerName || '暂无数据'}</Text>
             <Text className={styles.mvpStats}>
-              {topMvp?.count || 3} 次 MVP · 场均击杀 8.5
+              {topMvp?.count || 0} 次 MVP
             </Text>
           </View>
         </View>
       </View>
 
-      {/* Tab 切换 */}
       <View className={styles.tabs}>
         <View
           className={classnames(styles.tabItem, { [styles.active]: activeTab === 'all' })}
@@ -135,7 +142,6 @@ const RecordPage: React.FC = () => {
         </View>
       </View>
 
-      {/* 历史战绩列表 */}
       <Text className={styles.sectionTitle}>
         <Text className={styles.icon}>📜</Text>
         <Text>历史战绩</Text>
@@ -145,6 +151,7 @@ const RecordPage: React.FC = () => {
         <View className={styles.emptyState}>
           <Text className={styles.emptyIcon}>🎮</Text>
           <Text className={styles.emptyText}>暂无战绩记录</Text>
+          <Text className={styles.emptySubtext}>完成一局比赛后这里会显示你的战绩</Text>
         </View>
       ) : (
         <View className={styles.recordList}>
@@ -193,7 +200,6 @@ const RecordPage: React.FC = () => {
         </View>
       )}
 
-      {/* 战绩详情弹窗 */}
       {selectedRecord && (
         <View 
           className={styles.detailModal} 

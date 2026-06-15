@@ -10,16 +10,23 @@ export interface Player {
   deaths: number;
   flagsCaptured: number;
   hasShield: boolean;
+  shieldTime: number;
   isSlowdown: boolean;
+  slowdownTime: number;
+  hasSpeed: boolean;
+  speedTime: number;
   position: { x: number; y: number };
   isAlive: boolean;
   respawnTime: number;
+  itemCooldowns: Record<string, number>;
 }
 
 export interface GameMap {
   id: string;
   name: string;
   description: string;
+  difficulty: number;
+  maxPlayers: number;
   width: number;
   height: number;
   flagPositions: {
@@ -55,11 +62,14 @@ export interface GameRoom {
 export interface Item {
   id: string;
   name: string;
-  type: 'shield' | 'slowdown' | 'speed' | 'invisible';
+  type: 'shield' | 'slowdown' | 'speed' | 'invisible' | 'attack' | 'defense' | 'utility' | 'trap';
   description: string;
   duration: number;
   cooldown: number;
+  uses: number;
+  rarity: number;
   icon: string;
+  tips: string;
 }
 
 export interface GameRecord {

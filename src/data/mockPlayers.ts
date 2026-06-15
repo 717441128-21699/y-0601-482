@@ -1,9 +1,30 @@
 import type { Player } from '@/types/game';
 
+const createBasePlayer = (id: string, name: string): Player => ({
+  id,
+  name,
+  team: null,
+  isReady: false,
+  isHost: false,
+  score: 0,
+  kills: 0,
+  deaths: 0,
+  flagsCaptured: 0,
+  hasShield: false,
+  shieldTime: 0,
+  isSlowdown: false,
+  slowdownTime: 0,
+  hasSpeed: false,
+  speedTime: 0,
+  position: { x: 0, y: 0 },
+  isAlive: true,
+  respawnTime: 0,
+  itemCooldowns: {}
+});
+
 export const mockPlayers: Player[] = [
   {
-    id: 'p1',
-    name: '张三',
+    ...createBasePlayer('p1', '张三'),
     team: 'red',
     isReady: true,
     isHost: true,
@@ -11,15 +32,10 @@ export const mockPlayers: Player[] = [
     kills: 5,
     deaths: 2,
     flagsCaptured: 2,
-    hasShield: false,
-    isSlowdown: false,
-    position: { x: 20, y: 30 },
-    isAlive: true,
-    respawnTime: 0
+    position: { x: 20, y: 30 }
   },
   {
-    id: 'p2',
-    name: '李四',
+    ...createBasePlayer('p2', '李四'),
     team: 'red',
     isReady: true,
     isHost: false,
@@ -27,15 +43,10 @@ export const mockPlayers: Player[] = [
     kills: 3,
     deaths: 3,
     flagsCaptured: 1,
-    hasShield: false,
-    isSlowdown: false,
-    position: { x: 25, y: 45 },
-    isAlive: true,
-    respawnTime: 0
+    position: { x: 25, y: 45 }
   },
   {
-    id: 'p3',
-    name: '王五',
+    ...createBasePlayer('p3', '王五'),
     team: 'red',
     isReady: false,
     isHost: false,
@@ -44,14 +55,13 @@ export const mockPlayers: Player[] = [
     deaths: 4,
     flagsCaptured: 0,
     hasShield: true,
-    isSlowdown: false,
+    shieldTime: 3,
     position: { x: 15, y: 60 },
     isAlive: false,
     respawnTime: 5
   },
   {
-    id: 'p4',
-    name: '赵六',
+    ...createBasePlayer('p4', '赵六'),
     team: 'red',
     isReady: true,
     isHost: false,
@@ -59,15 +69,12 @@ export const mockPlayers: Player[] = [
     kills: 4,
     deaths: 1,
     flagsCaptured: 1,
-    hasShield: false,
     isSlowdown: true,
-    position: { x: 30, y: 35 },
-    isAlive: true,
-    respawnTime: 0
+    slowdownTime: 3,
+    position: { x: 30, y: 35 }
   },
   {
-    id: 'p5',
-    name: '钱七',
+    ...createBasePlayer('p5', '钱七'),
     team: 'blue',
     isReady: true,
     isHost: false,
@@ -75,15 +82,10 @@ export const mockPlayers: Player[] = [
     kills: 6,
     deaths: 2,
     flagsCaptured: 2,
-    hasShield: false,
-    isSlowdown: false,
-    position: { x: 75, y: 30 },
-    isAlive: true,
-    respawnTime: 0
+    position: { x: 75, y: 30 }
   },
   {
-    id: 'p6',
-    name: '孙八',
+    ...createBasePlayer('p6', '孙八'),
     team: 'blue',
     isReady: true,
     isHost: false,
@@ -92,14 +94,11 @@ export const mockPlayers: Player[] = [
     deaths: 3,
     flagsCaptured: 1,
     hasShield: true,
-    isSlowdown: false,
-    position: { x: 70, y: 50 },
-    isAlive: true,
-    respawnTime: 0
+    shieldTime: 2,
+    position: { x: 70, y: 50 }
   },
   {
-    id: 'p7',
-    name: '周九',
+    ...createBasePlayer('p7', '周九'),
     team: 'blue',
     isReady: false,
     isHost: false,
@@ -107,15 +106,12 @@ export const mockPlayers: Player[] = [
     kills: 2,
     deaths: 5,
     flagsCaptured: 0,
-    hasShield: false,
-    isSlowdown: false,
     position: { x: 80, y: 40 },
     isAlive: false,
     respawnTime: 8
   },
   {
-    id: 'p8',
-    name: '吴十',
+    ...createBasePlayer('p8', '吴十'),
     team: 'blue',
     isReady: true,
     isHost: false,
@@ -123,19 +119,15 @@ export const mockPlayers: Player[] = [
     kills: 4,
     deaths: 2,
     flagsCaptured: 1,
-    hasShield: false,
-    isSlowdown: false,
-    position: { x: 65, y: 65 },
-    isAlive: true,
-    respawnTime: 0
+    position: { x: 65, y: 65 }
   }
 ];
 
 export const mockWaitingPlayers: Player[] = [
-  { id: 'w1', name: '玩家A', team: null, isReady: false, isHost: false, score: 0, kills: 0, deaths: 0, flagsCaptured: 0, hasShield: false, isSlowdown: false, position: { x: 0, y: 0 }, isAlive: true, respawnTime: 0 },
-  { id: 'w2', name: '玩家B', team: null, isReady: false, isHost: false, score: 0, kills: 0, deaths: 0, flagsCaptured: 0, hasShield: false, isSlowdown: false, position: { x: 0, y: 0 }, isAlive: true, respawnTime: 0 },
-  { id: 'w3', name: '玩家C', team: null, isReady: true, isHost: false, score: 0, kills: 0, deaths: 0, flagsCaptured: 0, hasShield: false, isSlowdown: false, position: { x: 0, y: 0 }, isAlive: true, respawnTime: 0 },
-  { id: 'w4', name: '玩家D', team: null, isReady: true, isHost: false, score: 0, kills: 0, deaths: 0, flagsCaptured: 0, hasShield: false, isSlowdown: false, position: { x: 0, y: 0 }, isAlive: true, respawnTime: 0 },
-  { id: 'w5', name: '玩家E', team: null, isReady: false, isHost: false, score: 0, kills: 0, deaths: 0, flagsCaptured: 0, hasShield: false, isSlowdown: false, position: { x: 0, y: 0 }, isAlive: true, respawnTime: 0 },
-  { id: 'w6', name: '玩家F', team: null, isReady: true, isHost: false, score: 0, kills: 0, deaths: 0, flagsCaptured: 0, hasShield: false, isSlowdown: false, position: { x: 0, y: 0 }, isAlive: true, respawnTime: 0 }
+  { ...createBasePlayer('w1', '玩家A') },
+  { ...createBasePlayer('w2', '玩家B') },
+  { ...createBasePlayer('w3', '玩家C'), isReady: true },
+  { ...createBasePlayer('w4', '玩家D'), isReady: true },
+  { ...createBasePlayer('w5', '玩家E') },
+  { ...createBasePlayer('w6', '玩家F'), isReady: true }
 ];

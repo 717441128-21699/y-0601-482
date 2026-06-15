@@ -11,44 +11,49 @@ const BattlePage: React.FC = () => {
     currentMap,
     myPlayerId,
     items,
+    selectedItems,
     isPaused,
     roomSettings,
-    gameTime,
     pauseGame,
     resumeGame,
     updatePlayerGameData,
     updateScore,
     addMessage: addStoreMessage,
-    joinRoom
+    useItem,
+    tickEffectTimes,
+    saveGameRecord,
+    startGame
   } = useGameStore();
 
   const [localGameTime, setLocalGameTime] = useState(currentRoom?.roundTime || 600);
   const [messages, setMessages] = useState<{ id: string; text: string; type: string }[]>([]);
-  const [itemCooldowns, setItemCooldowns] = useState<Record<string, number>>({});
   const [showStats, setShowStats] = useState(false);
   const [isSpectator, setIsSpectator] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
-  const hasJoinedRef = useRef(false);
-
-  useEffect(() => {
-    if (!currentRoom && !hasJoinedRef.current) {
-      hasJoinedRef.current = true;
-      joinRoom('battle-room');
-    }
-  }, [currentRoom]);
+  const hasStartedRef = useRef(false);
+  const hasSavedRecordRef = useRef(false);
 
   const players = currentRoom?.players || [];
   const score = currentRoom?.score || { red: 0, blue: 0 };
   const totalRounds = currentRoom?.totalRounds || roomSettings.totalRounds;
   const currentRound = currentRoom?.currentRound || 1;
-  const roundTime = currentRoom?.roundTime || roomSettings.roundTime;
   const respawnTime = roomSettings.respawnTime;
 
-  const me = players.find(p => p.id === myPlayerId) || players[0];
+  const me = players.find(p => p.id === myPlayerId);
   const myTeam = me?.team || 'red';
+  const myCooldowns = me?.itemCooldowns || {};
+
+  const battleItems = items.filter(i => selectedItems.includes(i.id));
+
+  useEffect(() => {
+    if (currentRoom?.gameStatus === 'waiting' && !hasStartedRef.current) {
+      hasStartedRef.current = true;
+      startGame();
+    }
+  }, [currentRoom, startGame]);
 
   const addMessage = useCallback((text: string, type: string) => {
-    const msg = { id: 'msg-' + Date.now(), text, type };
+    const msg = { id: 'msg-' + Date.now() + Math.random(), text, type };
     setMessages(prev => [...prev.slice(-4), msg]);
     addStoreMessage(text, type as any);
     
@@ -58,8 +63,10 @@ const BattlePage: React.FC = () => {
   }, [addStoreMessage]);
 
   useEffect(() => {
-    setLocalGameTime(roundTime);
-  }, [roundTime]);
+    if (currentRoom?.roundTime) {
+      setLocalGameTime(currentRoom.roundTime);
+    }
+  }, [currentRoom?.roundTime]);
 
   useEffect(() => {
     if (isPaused || gameEnded || !currentRoom) return;
@@ -73,26 +80,12 @@ const BattlePage: React.FC = () => {
         }
         return prev - 1;
       });
+      
+      tickEffectTimes();
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPaused, gameEnded, currentRoom, addMessage]);
-
-  useEffect(() => {
-    if (isPaused) return;
-    
-    const timer = setInterval(() => {
-      setItemCooldowns(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(key => {
-          if (next[key] > 0) next[key]--;
-        });
-        return next;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isPaused]);
+  }, [isPaused, gameEnded, currentRoom, tickEffectTimes, addMessage]);
 
   useEffect(() => {
     if (isPaused || gameEnded || !currentRoom) return;
@@ -100,16 +93,23 @@ const BattlePage: React.FC = () => {
     const moveInterval = setInterval(() => {
       players.forEach(p => {
         if (!p.isAlive) return;
-        const dx = (Math.random() - 0.5) * 6;
-        const dy = (Math.random() - 0.5) * 6;
+        
+        let speedFactor = 1;
+        if (p.hasSpeed) speedFactor = 1.5;
+        if (p.isSlowdown) speedFactor = 0.5;
+        
+        const baseSpeed = 6 * speedFactor;
+        const dx = (Math.random() - 0.5) * baseSpeed;
+        const dy = (Math.random() - 0.5) * baseSpeed;
+        
+        const newX = Math.max(5, Math.min(95, p.position.x + dx));
+        const newY = Math.max(5, Math.min(95, p.position.y + dy));
+        
         updatePlayerGameData(p.id, {
-          position: {
-            x: Math.max(5, Math.min(95, p.position.x + dx)),
-            y: Math.max(5, Math.min(95, p.position.y + dy))
-          }
+          position: { x: newX, y: newY }
         });
       });
-    }, 1500);
+    }, 1200);
 
     return () => clearInterval(moveInterval);
   }, [isPaused, gameEnded, currentRoom, players, updatePlayerGameData]);
@@ -118,10 +118,10 @@ const BattlePage: React.FC = () => {
     if (isPaused || gameEnded || !currentRoom) return;
 
     const flagInterval = setInterval(() => {
-      if (Math.random() > 0.85) {
+      if (Math.random() > 0.82) {
         const scoringTeam = Math.random() > 0.5 ? 'red' : 'blue';
         updateScore(scoringTeam, 1);
-        addMessage(`${scoringTeam === 'red' ? '红队' : '蓝队'}夺得旗帜！`, 'system');
+        addMessage(`${scoringTeam === 'red' ? '红队' : '蓝队'}夺得旗帜！+1分`, 'system');
         
         const scoringPlayer = players.find(p => p.team === scoringTeam && p.isAlive);
         if (scoringPlayer) {
@@ -131,7 +131,7 @@ const BattlePage: React.FC = () => {
           });
         }
       }
-    }, 8000);
+    }, 7000);
 
     return () => clearInterval(flagInterval);
   }, [isPaused, gameEnded, currentRoom, players, updateScore, updatePlayerGameData, addMessage]);
@@ -140,24 +140,28 @@ const BattlePage: React.FC = () => {
     if (isPaused || gameEnded || !currentRoom) return;
 
     const killInterval = setInterval(() => {
-      if (Math.random() > 0.7) {
+      if (Math.random() > 0.65) {
         const alivePlayers = players.filter(p => p.isAlive);
         if (alivePlayers.length < 4) return;
         
         const killer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
         let victim = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
         
-        while (victim.team === killer.team) {
+        while (victim.team === killer.team || victim.id === killer.id) {
           victim = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+          if (alivePlayers.filter(p => p.team !== killer.team).length <= 1) break;
         }
         
+        if (victim.team === killer.team) return;
+        
         if (victim.hasShield) {
-          addMessage(`${victim.name}的护盾挡住了攻击！`, 'info');
-          updatePlayerGameData(victim.id, { hasShield: false });
+          addMessage(`${victim.name}的护盾挡住了${killer.name}的攻击！`, 'info');
+          updatePlayerGameData(victim.id, { hasShield: false, shieldTime: 0 });
           return;
         }
         
-        addMessage(`${killer.name} 击杀了 ${victim.name}`, 'info');
+        const killerBonus = killer.hasSpeed ? '（加速追击）' : '';
+        addMessage(`${killer.name}${killerBonus} 击杀了 ${victim.name}${victim.isSlowdown ? '（减速中）' : ''}`, 'info');
         
         updatePlayerGameData(killer.id, {
           kills: killer.kills + 1,
@@ -167,10 +171,16 @@ const BattlePage: React.FC = () => {
         updatePlayerGameData(victim.id, {
           isAlive: false,
           deaths: victim.deaths + 1,
-          respawnTime: respawnTime
+          respawnTime: respawnTime,
+          hasShield: false,
+          shieldTime: 0,
+          isSlowdown: false,
+          slowdownTime: 0,
+          hasSpeed: false,
+          speedTime: 0
         });
       }
-    }, 5000);
+    }, 4500);
 
     return () => clearInterval(killInterval);
   }, [isPaused, gameEnded, currentRoom, players, respawnTime, updatePlayerGameData, addMessage]);
@@ -184,14 +194,21 @@ const BattlePage: React.FC = () => {
           const newTime = p.respawnTime - 1;
           if (newTime <= 0) {
             addMessage(`${p.name} 复活了！`, 'info');
+            const spawnPoints = currentMap?.spawnPoints[p.team || 'red'] || [{ x: 50, y: 50 }];
+            const spawn = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
             updatePlayerGameData(p.id, {
               isAlive: true,
               respawnTime: 0,
               hasShield: false,
+              shieldTime: 0,
               isSlowdown: false,
-              position: p.team === 'red'
-                ? { x: 15 + Math.random() * 10, y: 40 + Math.random() * 20 }
-                : { x: 75 + Math.random() * 10, y: 40 + Math.random() * 20 }
+              slowdownTime: 0,
+              hasSpeed: false,
+              speedTime: 0,
+              position: { 
+                x: spawn.x + (Math.random() - 0.5) * 6, 
+                y: spawn.y + (Math.random() - 0.5) * 6 
+              }
             });
           } else {
             updatePlayerGameData(p.id, { respawnTime: newTime });
@@ -201,7 +218,7 @@ const BattlePage: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(respawnTimer);
-  }, [isPaused, gameEnded, currentRoom, players, updatePlayerGameData, addMessage]);
+  }, [isPaused, gameEnded, currentRoom, currentMap, players, updatePlayerGameData, addMessage]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -210,8 +227,10 @@ const BattlePage: React.FC = () => {
   };
 
   const handleUseItem = (itemId: string) => {
-    if (gameEnded || !me) return;
-    if (itemCooldowns[itemId] > 0) {
+    if (gameEnded || !me || !me.isAlive) return;
+    
+    const cooldown = myCooldowns[itemId];
+    if (cooldown && cooldown > 0) {
       Taro.showToast({ title: '冷却中', icon: 'none' });
       return;
     }
@@ -219,27 +238,21 @@ const BattlePage: React.FC = () => {
     const item = items.find(i => i.id === itemId);
     if (!item) return;
 
-    if (item.type === 'shield') {
-      updatePlayerGameData(myPlayerId, { hasShield: true });
-      addMessage('护盾已激活！', 'team');
-    } else if (item.type === 'slowdown') {
-      players.forEach(p => {
-        if (p.id !== myPlayerId && p.team !== myTeam) {
-          updatePlayerGameData(p.id, { isSlowdown: true });
-        }
-      });
+    useItem(itemId);
+    
+    if (item.type === 'shield' || itemId === 'shield') {
+      addMessage(`护盾已激活！持续${item.duration}秒`, 'team');
+    } else if (item.type === 'speed' || itemId === 'speed') {
+      addMessage(`加速已开启！速度提升50%`, 'team');
+    } else if (item.type === 'trap' || itemId === 'slowdown') {
       addMessage('减速陷阱已释放！', 'team');
-      setTimeout(() => {
-        players.forEach(p => {
-          updatePlayerGameData(p.id, { isSlowdown: false });
-        });
-      }, 5000);
+    } else if (itemId === 'shockwave') {
+      addMessage('冲击波已释放！击退周围敌人', 'team');
+    } else if (itemId === 'invisible') {
+      addMessage('隐身已开启！', 'team');
+    } else if (itemId === 'scout') {
+      addMessage('侦查眼已放置！', 'team');
     }
-
-    setItemCooldowns(prev => ({
-      ...prev,
-      [itemId]: item.cooldown
-    }));
 
     console.log('[Battle] Item used:', itemId);
   };
@@ -259,6 +272,10 @@ const BattlePage: React.FC = () => {
   };
 
   const handleEndGame = () => {
+    if (!hasSavedRecordRef.current) {
+      hasSavedRecordRef.current = true;
+      saveGameRecord();
+    }
     Taro.redirectTo({ url: '/pages/record/index' });
   };
 
@@ -322,34 +339,29 @@ const BattlePage: React.FC = () => {
           
           {isSpectator && <View className={styles.spectatorBadge}>👁️ 观战中</View>}
 
-          <View
-            className={classnames(styles.spawnZone, styles.redZone)}
-            style={{ left: '15%', top: '50%', width: '25%', height: '40%' }}
-          ></View>
-          <View
-            className={classnames(styles.spawnZone, styles.blueZone)}
-            style={{ left: '85%', top: '50%', width: '25%', height: '40%' }}
-          ></View>
-
-          <View
-            className={classnames(styles.flag, styles.redFlag)}
-            style={{ left: `${currentMap?.flagPositions.red.x || 15}%`, top: `${currentMap?.flagPositions.red.y || 50}%` }}
-          >
-            🚩
-          </View>
-          <View
-            className={classnames(styles.flag, styles.blueFlag)}
-            style={{ left: `${currentMap?.flagPositions.blue.x || 85}%`, top: `${currentMap?.flagPositions.blue.y || 50}%` }}
-          >
-            🚩
-          </View>
-          {currentMap?.flagPositions.neutral && (
-            <View
-              className={classnames(styles.flag, styles.neutralFlag)}
-              style={{ left: `${currentMap.flagPositions.neutral.x}%`, top: `${currentMap.flagPositions.neutral.y}%` }}
-            >
-              🏳️
-            </View>
+          {currentMap?.flagPositions && (
+            <>
+              <View
+                className={classnames(styles.flag, styles.redFlag)}
+                style={{ left: `${currentMap.flagPositions.red.x}%`, top: `${currentMap.flagPositions.red.y}%` }}
+              >
+                🚩
+              </View>
+              <View
+                className={classnames(styles.flag, styles.blueFlag)}
+                style={{ left: `${currentMap.flagPositions.blue.x}%`, top: `${currentMap.flagPositions.blue.y}%` }}
+              >
+                🚩
+              </View>
+              {currentMap.flagPositions.neutral && (
+                <View
+                  className={classnames(styles.flag, styles.neutralFlag)}
+                  style={{ left: `${currentMap.flagPositions.neutral.x}%`, top: `${currentMap.flagPositions.neutral.y}%` }}
+                >
+                  🏳️
+                </View>
+              )}
+            </>
           )}
 
           {currentMap?.capturePoints?.map((cp, idx) => (
@@ -365,44 +377,79 @@ const BattlePage: React.FC = () => {
             </View>
           ))}
 
-          {players.map(player => (
-            <View
-              key={player.id}
-              className={classnames(
-                styles.player,
-                player.team === 'red' ? styles.redPlayer : styles.bluePlayer,
-                { [styles.dead]: !player.isAlive },
-                { [styles.me]: player.id === myPlayerId },
-                { [styles.hasShield]: player.hasShield }
-              )}
-              style={{
-                left: `${player.position.x}%`,
-                top: `${player.position.y}%`
-              }}
-            >
-              {player.isAlive ? (player.id === myPlayerId ? '我' : player.name.charAt(0)) : '💀'}
-            </View>
-          ))}
+          {players.map(player => {
+            const showPlayer = isSpectator || player.id === myPlayerId || player.team === myTeam || !player.hasShield;
+            const isInvisible = (player as any).hasInvisible && player.id !== myPlayerId;
+            
+            if (isInvisible) return null;
+            
+            return (
+              <View
+                key={player.id}
+                className={classnames(
+                  styles.player,
+                  player.team === 'red' ? styles.redPlayer : styles.bluePlayer,
+                  { [styles.dead]: !player.isAlive },
+                  { [styles.me]: player.id === myPlayerId },
+                  { [styles.hasShield]: player.hasShield },
+                  { [styles.hasSpeed]: player.hasSpeed },
+                  { [styles.isSlowdown]: player.isSlowdown }
+                )}
+                style={{
+                  left: `${player.position.x}%`,
+                  top: `${player.position.y}%`
+                }}
+              >
+                {player.isAlive ? (player.id === myPlayerId ? '我' : player.name.charAt(0)) : '💀'}
+                
+                {player.hasShield && player.shieldTime > 0 && (
+                  <View className={styles.effectTimer}>{player.shieldTime}s</View>
+                )}
+                {player.hasSpeed && player.speedTime > 0 && (
+                  <View className={classnames(styles.effectTimer, styles.speedTimer)}>{player.speedTime}s</View>
+                )}
+                {player.isSlowdown && player.slowdownTime > 0 && (
+                  <View className={classnames(styles.effectTimer, styles.slowTimer)}>{player.slowdownTime}s</View>
+                )}
+              </View>
+            );
+          })}
         </View>
       </View>
 
       <View className={styles.bottomBar}>
         <View className={styles.itemBar}>
-          {items.slice(0, 4).map(item => (
-            <View
-              key={item.id}
-              className={classnames(styles.itemSlot, { [styles.active]: itemCooldowns[item.id] === 0 || itemCooldowns[item.id] === undefined }}
-              onClick={() => handleUseItem(item.id)}
-            >
-              <Text className={styles.itemIcon}>{item.icon}</Text>
-              <Text className={styles.itemName}>{item.name}</Text>
-              {itemCooldowns[item.id] > 0 && (
-                <View className={styles.cooldownOverlay}>
-                  {itemCooldowns[item.id]}
+          {battleItems.length > 0 ? (
+            battleItems.map(item => {
+              const cd = myCooldowns[item.id] || 0;
+              const isOnCooldown = cd > 0;
+              const isDisabled = isOnCooldown || !me?.isAlive || gameEnded;
+              
+              return (
+                <View
+                  key={item.id}
+                  className={classnames(
+                    styles.itemSlot, 
+                    { [styles.active]: !isOnCooldown },
+                    { [styles.disabled]: isDisabled }
+                  )}
+                  onClick={() => handleUseItem(item.id)}
+                >
+                  <Text className={styles.itemIcon}>{item.icon}</Text>
+                  <Text className={styles.itemName}>{item.name}</Text>
+                  {isOnCooldown && (
+                    <View className={styles.cooldownOverlay}>
+                      {cd}
+                    </View>
+                  )}
                 </View>
-              )}
+              );
+            })
+          ) : (
+            <View className={styles.noItemsHint}>
+              <Text>未携带道具，去道具中心装备吧</Text>
             </View>
-          ))}
+          )}
         </View>
 
         <View className={styles.actionButtons}>
@@ -420,9 +467,9 @@ const BattlePage: React.FC = () => {
           </Button>
           <Button
             className={classnames(styles.actionBtn, styles.primary)}
-            onClick={handlePause}
+            onClick={isPaused ? handleResume : handlePause}
           >
-            ⏸️ 暂停
+            {isPaused ? '▶️ 继续' : '⏸️ 暂停'}
           </Button>
         </View>
       </View>
@@ -463,6 +510,13 @@ const BattlePage: React.FC = () => {
           <Text className={styles.pauseReason}>
             最终比分 {score.red} : {score.blue}
           </Text>
+          <View className={styles.mvpLine}>
+            <Text className={styles.mvpLabel}>👑 MVP: </Text>
+            <Text className={styles.mvpName}>
+              {sortedPlayers[0]?.name || '未知'}
+            </Text>
+            <Text className={styles.mvpScore}> ({sortedPlayers[0]?.score || 0}分)</Text>
+          </View>
           <View className={styles.pauseActions}>
             <Button
               className={classnames(styles.actionBtn, styles.primary)}
@@ -490,11 +544,20 @@ const BattlePage: React.FC = () => {
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                   </Text>
                   <View className={styles.playerInfo}>
-                    <Text className={styles.name}>{player.name}</Text>
+                    <Text className={styles.name}>
+                      {player.name}
+                      {player.id === myPlayerId && ' (我)'}
+                    </Text>
                     <Text className={styles.team}>
                       {player.team === 'red' ? '🔴 红队' : '🔵 蓝队'}
                       {' · '}击杀 {player.kills} / 死亡 {player.deaths}
                     </Text>
+                    <View className={styles.statusIcons}>
+                      {player.hasShield && <Text className={styles.statusIcon}>🛡️</Text>}
+                      {player.hasSpeed && <Text className={styles.statusIcon}>⚡</Text>}
+                      {player.isSlowdown && <Text className={styles.statusIcon}>🐌</Text>}
+                      {!player.isAlive && <Text className={styles.statusIcon}>💀</Text>}
+                    </View>
                   </View>
                   <Text className={styles.playerScore}>{player.score}</Text>
                 </View>
