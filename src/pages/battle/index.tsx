@@ -6,28 +6,34 @@ import { useGameStore } from '@/store/gameStore';
 import classnames from 'classnames';
 
 const BattlePage: React.FC = () => {
-  const {
-    currentRoom,
+  const { 
+    currentRoom, 
     currentMap,
-    myPlayerId,
-    items,
+    players: storePlayers,
+    maps,
+    items, 
     selectedItems,
-    isPaused,
+    myPlayerId, 
+    score: storeScore,
     roomSettings,
-    pauseGame,
-    resumeGame,
+    isPaused,
+    capturePointOwners,
+    pauseGame, 
+    resumeGame, 
+    updateScore, 
     updatePlayerGameData,
-    updateScore,
     addMessage: addStoreMessage,
     useItem,
     tickEffectTimes,
     saveGameRecord,
-    startGame
+    startGame,
+    capturePoint
   } = useGameStore();
 
   const [localGameTime, setLocalGameTime] = useState(currentRoom?.roundTime || 600);
   const [messages, setMessages] = useState<{ id: string; text: string; type: string }[]>([]);
   const [showStats, setShowStats] = useState(false);
+  const [showSettlement, setShowSettlement] = useState(false);
   const [isSpectator, setIsSpectator] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const hasStartedRef = useRef(false);
@@ -42,8 +48,12 @@ const BattlePage: React.FC = () => {
   const me = players.find(p => p.id === myPlayerId);
   const myTeam = me?.team || 'red';
   const myCooldowns = me?.itemCooldowns || {};
+  const myRemainingUses = me?.itemRemainingUses || {};
 
   const battleItems = items.filter(i => selectedItems.includes(i.id));
+  const rules = currentMap?.rules;
+  const scoreTimeline = currentRoom?.scoreTimeline || [];
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
   useEffect(() => {
     if (currentRoom?.gameStatus === 'waiting' && !hasStartedRef.current) {
@@ -115,26 +125,49 @@ const BattlePage: React.FC = () => {
   }, [isPaused, gameEnded, currentRoom, players, updatePlayerGameData]);
 
   useEffect(() => {
-    if (isPaused || gameEnded || !currentRoom) return;
+    if (isPaused || gameEnded || !currentRoom || !currentMap) return;
 
     const flagInterval = setInterval(() => {
       if (Math.random() > 0.82) {
         const scoringTeam = Math.random() > 0.5 ? 'red' : 'blue';
-        updateScore(scoringTeam, 1);
-        addMessage(`${scoringTeam === 'red' ? '红队' : '蓝队'}夺得旗帜！+1分`, 'system');
+        const flagType = Math.random() > 0.6 ? 'neutral' : (scoringTeam === 'red' ? 'blue' : 'red');
+        const flagScore = rules?.scorePerFlag || 1;
+        
+        updateScore(scoringTeam, 1, 'flag');
+        addMessage(`${scoringTeam === 'red' ? '红队' : '蓝队'}夺得${flagType === 'neutral' ? '中立' : ''}旗帜！+${flagScore}分`, 'system');
         
         const scoringPlayer = players.find(p => p.team === scoringTeam && p.isAlive);
         if (scoringPlayer) {
           updatePlayerGameData(scoringPlayer.id, {
             flagsCaptured: scoringPlayer.flagsCaptured + 1,
-            score: scoringPlayer.score + 30
+            score: scoringPlayer.score + flagScore * 30
           });
         }
       }
-    }, 7000);
+    }, 3500);
 
     return () => clearInterval(flagInterval);
-  }, [isPaused, gameEnded, currentRoom, players, updateScore, updatePlayerGameData, addMessage]);
+  }, [isPaused, gameEnded, currentRoom, currentMap, players, updateScore, updatePlayerGameData, addMessage, rules]);
+
+  useEffect(() => {
+    if (isPaused || gameEnded || !currentRoom || !currentMap || !rules) return;
+    if (rules.capturePointMode === 'none') return;
+
+    const captureInterval = setInterval(() => {
+      if (Math.random() > 0.88 && currentMap.capturePoints) {
+        const cpIdx = Math.floor(Math.random() * currentMap.capturePoints.length);
+        const cp = currentMap.capturePoints[cpIdx];
+        const capturingTeam = Math.random() > 0.5 ? 'red' : 'blue';
+        const currentOwner = capturePointOwners[cp.id];
+        
+        if (currentOwner !== capturingTeam) {
+          capturePoint(cp.id, capturingTeam);
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(captureInterval);
+  }, [isPaused, gameEnded, currentRoom, currentMap, rules, capturePointOwners, capturePoint]);
 
   useEffect(() => {
     if (isPaused || gameEnded || !currentRoom) return;
@@ -229,6 +262,12 @@ const BattlePage: React.FC = () => {
   const handleUseItem = (itemId: string) => {
     if (gameEnded || !me || !me.isAlive) return;
     
+    const remaining = myRemainingUses[itemId] ?? 0;
+    if (remaining <= 0) {
+      Taro.showToast({ title: '道具已用完', icon: 'none' });
+      return;
+    }
+    
     const cooldown = myCooldowns[itemId];
     if (cooldown && cooldown > 0) {
       Taro.showToast({ title: '冷却中', icon: 'none' });
@@ -254,7 +293,7 @@ const BattlePage: React.FC = () => {
       addMessage('侦查眼已放置！', 'team');
     }
 
-    console.log('[Battle] Item used:', itemId);
+    console.log('[Battle] Item used:', itemId, 'remaining:', remaining - 1);
   };
 
   const handlePause = () => {
@@ -276,7 +315,15 @@ const BattlePage: React.FC = () => {
       hasSavedRecordRef.current = true;
       saveGameRecord();
     }
+    setShowSettlement(true);
+  };
+
+  const handleViewRecord = () => {
     Taro.redirectTo({ url: '/pages/record/index' });
+  };
+
+  const handleBackToLobby = () => {
+    Taro.redirectTo({ url: '/pages/lobby/index' });
   };
 
   const toggleSpectator = () => {
@@ -285,6 +332,27 @@ const BattlePage: React.FC = () => {
   };
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const mvpPlayer = sortedPlayers[0];
+
+  const generateMvpReason = (): string => {
+    if (!mvpPlayer) return '综合表现最佳';
+    const reasons: string[] = [];
+    if (mvpPlayer.kills >= Math.max(...players.map(p => p.kills))) {
+      reasons.push(`全场最高击杀 ${mvpPlayer.kills} 次`);
+    }
+    if (mvpPlayer.flagsCaptured >= Math.max(...players.map(p => p.flagsCaptured)) && mvpPlayer.flagsCaptured > 0) {
+      reasons.push(`夺旗 ${mvpPlayer.flagsCaptured} 次`);
+    }
+    if (reasons.length === 0) {
+      reasons.push(`综合评分 ${mvpPlayer.score}`);
+    }
+    return reasons.join('；');
+  };
+
+  const getScoreChartData = () => {
+    if (scoreTimeline.length === 0) return [];
+    return scoreTimeline.slice(-10);
+  };
 
   if (!currentRoom || players.length === 0) {
     return (
@@ -364,18 +432,26 @@ const BattlePage: React.FC = () => {
             </>
           )}
 
-          {currentMap?.capturePoints?.map((cp, idx) => (
-            <View
-              key={cp.id}
-              className={classnames(
-                styles.capturePoint,
-                idx % 2 === 0 ? styles.capturedRed : styles.capturedBlue
-              )}
-              style={{ left: `${cp.x}%`, top: `${cp.y}%` }}
-            >
-              ⭐
-            </View>
-          ))}
+          {currentMap?.capturePoints?.map((cp, idx) => {
+            const owner = capturePointOwners[cp.id];
+            return (
+              <View
+                key={cp.id}
+                className={classnames(
+                  styles.capturePoint,
+                  owner === 'red' ? styles.capturedRed : 
+                  owner === 'blue' ? styles.capturedBlue :
+                  idx % 2 === 0 ? styles.capturedRed : styles.capturedBlue
+                )}
+                style={{ left: `${cp.x}%`, top: `${cp.y}%` }}
+              >
+                <Text className={styles.capturePointIcon}>
+                  {owner === 'red' ? '🔴' : owner === 'blue' ? '🔵' : '⭐'}
+                </Text>
+                <Text className={styles.capturePointName}>{cp.name}</Text>
+              </View>
+            );
+          })}
 
           {players.map(player => {
             const showPlayer = isSpectator || player.id === myPlayerId || player.team === myTeam || !player.hasShield;
@@ -422,24 +498,35 @@ const BattlePage: React.FC = () => {
           {battleItems.length > 0 ? (
             battleItems.map(item => {
               const cd = myCooldowns[item.id] || 0;
+              const remaining = myRemainingUses[item.id] ?? 0;
               const isOnCooldown = cd > 0;
-              const isDisabled = isOnCooldown || !me?.isAlive || gameEnded;
+              const isExhausted = remaining <= 0;
+              const isDisabled = isOnCooldown || isExhausted || !me?.isAlive || gameEnded;
               
               return (
                 <View
                   key={item.id}
                   className={classnames(
                     styles.itemSlot, 
-                    { [styles.active]: !isOnCooldown },
-                    { [styles.disabled]: isDisabled }
+                    { [styles.active]: !isOnCooldown && !isExhausted },
+                    { [styles.disabled]: isDisabled },
+                    { [styles.exhausted]: isExhausted }
                   )}
                   onClick={() => handleUseItem(item.id)}
                 >
                   <Text className={styles.itemIcon}>{item.icon}</Text>
                   <Text className={styles.itemName}>{item.name}</Text>
+                  <View className={styles.usesBadge}>
+                    <Text className={styles.usesText}>{remaining}/{item.uses}</Text>
+                  </View>
                   {isOnCooldown && (
                     <View className={styles.cooldownOverlay}>
                       {cd}
+                    </View>
+                  )}
+                  {isExhausted && (
+                    <View className={styles.exhaustedOverlay}>
+                      <Text>已用完</Text>
                     </View>
                   )}
                 </View>
@@ -501,7 +588,7 @@ const BattlePage: React.FC = () => {
         </View>
       )}
 
-      {gameEnded && (
+      {gameEnded && !showSettlement && (
         <View className={styles.pauseOverlay}>
           <Text className={styles.pauseIcon}>🏆</Text>
           <Text className={styles.pauseText}>
@@ -513,9 +600,9 @@ const BattlePage: React.FC = () => {
           <View className={styles.mvpLine}>
             <Text className={styles.mvpLabel}>👑 MVP: </Text>
             <Text className={styles.mvpName}>
-              {sortedPlayers[0]?.name || '未知'}
+              {mvpPlayer?.name || '未知'}
             </Text>
-            <Text className={styles.mvpScore}> ({sortedPlayers[0]?.score || 0}分)</Text>
+            <Text className={styles.mvpScore}> ({mvpPlayer?.score || 0}分)</Text>
           </View>
           <View className={styles.pauseActions}>
             <Button
@@ -523,9 +610,143 @@ const BattlePage: React.FC = () => {
               onClick={handleEndGame}
               style={{ flex: 1 }}
             >
-              查看战绩
+              查看结算
             </Button>
           </View>
+        </View>
+      )}
+
+      {showSettlement && (
+        <View className={styles.settlementOverlay}>
+          <ScrollView className={styles.settlementContent} scrollY>
+            <View className={styles.settlementHeader}>
+              <Text className={styles.settlementTitle}>🎮 战斗结算</Text>
+              <Text className={styles.settlementMap}>
+                🗺️ {currentMap?.name || '未知地图'}
+              </Text>
+              <Text className={styles.settlementDuration}>
+                ⏱️ 本局时长：{formatDuration((currentRoom?.roundTime || 600) - localGameTime)}
+              </Text>
+            </View>
+
+            <View className={styles.settlementScore}>
+              <View className={classnames(styles.teamScoreBlock, styles.redTeam)}>
+                <Text className={styles.teamLabel}>🔴 红队</Text>
+                <Text className={styles.teamFinalScore}>{score.red}</Text>
+              </View>
+              <View className={styles.vsBlock}>
+                <Text className={styles.vsText}>VS</Text>
+                <Text className={styles.resultText}>
+                  {score.red > score.blue ? '红队胜' : score.blue > score.red ? '蓝队胜' : '平局'}
+                </Text>
+              </View>
+              <View className={classnames(styles.teamScoreBlock, styles.blueTeam)}>
+                <Text className={styles.teamLabel}>🔵 蓝队</Text>
+                <Text className={styles.teamFinalScore}>{score.blue}</Text>
+              </View>
+            </View>
+
+            <View className={styles.mvpSection}>
+              <Text className={styles.sectionLabel}>👑 本局 MVP</Text>
+              <View className={styles.mvpCard}>
+                <View className={styles.mvpAvatar}>👑</View>
+                <View className={styles.mvpDetails}>
+                  <Text className={styles.mvpPlayerName}>{mvpPlayer?.name || '未知'}</Text>
+                  <Text className={styles.mvpScoreText}>综合评分 {mvpPlayer?.score || 0}</Text>
+                  <Text className={styles.mvpReason}>{generateMvpReason()}</Text>
+                </View>
+              </View>
+            </View>
+
+            <View className={styles.timelineSection}>
+              <Text className={styles.sectionLabel}>📈 比分走势</Text>
+              <View className={styles.timelineChart}>
+                {getScoreChartData().map((point, idx) => {
+                  const maxScore = Math.max(point.red, point.blue, 1);
+                  const redHeight = (point.red / maxScore) * 100;
+                  const blueHeight = (point.blue / maxScore) * 100;
+                  return (
+                    <View key={idx} className={styles.timelineColumn}>
+                      <View className={styles.timelineBars}>
+                        <View 
+                          className={classnames(styles.bar, styles.redBar)} 
+                          style={{ height: `${redHeight}%` }}
+                        />
+                        <View 
+                          className={classnames(styles.bar, styles.blueBar)} 
+                          style={{ height: `${blueHeight}%` }}
+                        />
+                      </View>
+                      <Text className={styles.timelineScore}>
+                        {point.red}:{point.blue}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View className={styles.statsSection}>
+              <Text className={styles.sectionLabel}>📊 详细数据</Text>
+              
+              <Text className={styles.teamSubLabel}>🔴 红队</Text>
+              {players
+                .filter(p => p.team === 'red')
+                .sort((a, b) => b.score - a.score)
+                .map((player, idx) => (
+                  <View key={player.id} className={styles.playerStatRow}>
+                    <Text className={styles.statRank}>{idx + 1}</Text>
+                    <View className={styles.statPlayer}>
+                      <Text className={styles.statName}>
+                        {player.name}
+                        {player.id === mvpPlayer?.id && <Text className={styles.mvpBadge}> 👑</Text>}
+                      </Text>
+                      <Text className={styles.statSub}>
+                        击杀 {player.kills} · 死亡 {player.deaths} · 夺旗 {player.flagsCaptured} · 占点 {player.pointsCaptured}
+                      </Text>
+                    </View>
+                    <Text className={styles.statScore}>{player.score}</Text>
+                  </View>
+                ))}
+
+              <Text className={classnames(styles.teamSubLabel, styles.blueSubLabel)}>🔵 蓝队</Text>
+              {players
+                .filter(p => p.team === 'blue')
+                .sort((a, b) => b.score - a.score)
+                .map((player, idx) => (
+                  <View key={player.id} className={styles.playerStatRow}>
+                    <Text className={styles.statRank}>{idx + 1}</Text>
+                    <View className={styles.statPlayer}>
+                      <Text className={styles.statName}>
+                        {player.name}
+                        {player.id === mvpPlayer?.id && <Text className={styles.mvpBadge}> 👑</Text>}
+                      </Text>
+                      <Text className={styles.statSub}>
+                        击杀 {player.kills} · 死亡 {player.deaths} · 夺旗 {player.flagsCaptured} · 占点 {player.pointsCaptured}
+                      </Text>
+                    </View>
+                    <Text className={styles.statScore}>{player.score}</Text>
+                  </View>
+                ))}
+            </View>
+
+            <View className={styles.settlementActions}>
+              <Button
+                className={classnames(styles.actionBtn, styles.secondary)}
+                onClick={handleBackToLobby}
+                style={{ flex: 1 }}
+              >
+                返回大厅
+              </Button>
+              <Button
+                className={classnames(styles.actionBtn, styles.primary)}
+                onClick={handleViewRecord}
+                style={{ flex: 1 }}
+              >
+                查看战绩
+              </Button>
+            </View>
+          </ScrollView>
         </View>
       )}
 

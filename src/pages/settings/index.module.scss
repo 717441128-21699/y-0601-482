@@ -340,3 +340,72 @@
     color: $color-text-tertiary;
   }
 }
+
+.profileCard {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.2) 0%, rgba(255, 125, 0, 0.15) 100%);
+  border: 1px solid rgba(64, 128, 255, 0.3);
+  border-radius: $radius-xl;
+  padding: $spacing-xl;
+  margin-bottom: $spacing-xl;
+
+  .avatarWrapper {
+    width: 100rpx;
+    height: 100rpx;
+    background: linear-gradient(135deg, $color-primary-light 0%, $color-gold-light 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: $spacing-md;
+
+    .avatar {
+      font-size: 48rpx;
+    }
+  }
+
+  .profileInfo {
+    flex: 1;
+
+    .playerName {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-bold;
+      color: $color-text-primary;
+      display: block;
+      margin-bottom: $spacing-xs;
+    }
+
+    .playerId {
+      font-size: $font-size-xs;
+      color: $color-text-secondary;
+      font-family: monospace;
+    }
+  }
+
+  .editNameBtn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: $radius-round;
+    padding: $spacing-sm $spacing-md;
+    transition: all $transition-fast;
+
+    &:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .editNameText {
+      font-size: $font-size-xs;
+      color: $color-text-primary;
+      font-weight: $font-weight-medium;
+    }
+  }
+}
+
+.inputHint {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  margin-top: $spacing-sm;
+  text-align: right;
+}

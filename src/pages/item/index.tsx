@@ -9,10 +9,12 @@ import classnames from 'classnames';
 type TabType = 'all' | 'attack' | 'defense' | 'utility' | 'trap';
 
 const ItemPage: React.FC = () => {
-  const { items, selectedItems, toggleSelectItem } = useGameStore();
+  const { items, selectedItems, toggleSelectItem, currentMap, maps } = useGameStore();
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+
+  const recommendedItemIds = currentMap?.rules?.recommendedItems || [];
 
   const tabs: { key: TabType; label: string; icon: string }[] = [
     { key: 'all', label: '全部', icon: '📦' },
@@ -25,6 +27,11 @@ const ItemPage: React.FC = () => {
   const filteredItems = activeTab === 'all' 
     ? items 
     : items.filter(item => item.type === activeTab);
+
+  const getMapBonus = (item: Item) => {
+    if (!currentMap || !item.mapBonus) return null;
+    return item.mapBonus.find(b => b.mapId === currentMap.id);
+  };
 
   const getItemTypeLabel = (type: string) => {
     switch (type) {
@@ -82,6 +89,34 @@ const ItemPage: React.FC = () => {
           <Text className={styles.subtitle}>选择你的战备道具（最多4个）</Text>
         </View>
 
+        {currentMap && (
+          <View className={styles.mapInfoCard}>
+            <View className={styles.mapInfoHeader}>
+              <Text className={styles.mapIcon}>🗺️</Text>
+              <View className={styles.mapInfoText}>
+                <Text className={styles.mapNameLabel}>当前地图</Text>
+                <Text className={styles.mapName}>{currentMap.name}</Text>
+              </View>
+            </View>
+            {recommendedItemIds.length > 0 && (
+              <View className={styles.mapRecommendations}>
+                <Text className={styles.recommendationLabel}>💡 本地图推荐道具：</Text>
+                <View className={styles.recommendedItems}>
+                  {recommendedItemIds.map(id => {
+                    const item = items.find(i => i.id === id);
+                    return item ? (
+                      <View key={id} className={styles.recommendedItemTag}>
+                        <Text className={styles.tagIcon}>{item.icon}</Text>
+                        <Text className={styles.tagName}>{item.name}</Text>
+                      </View>
+                    ) : null;
+                  })}
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* 已选道具栏 */}
         <View className={styles.loadoutSection}>
           <View className={styles.loadoutHeader}>
@@ -134,17 +169,24 @@ const ItemPage: React.FC = () => {
           {filteredItems.map(item => {
             const rarity = getItemRarity(item.rarity);
             const isSelected = selectedItems.includes(item.id);
+            const isRecommended = recommendedItemIds.includes(item.id);
+            const mapBonus = getMapBonus(item);
             
             return (
               <View
                 key={item.id}
-                className={classnames(styles.itemCard, { [styles.selected]: isSelected })}
+                className={classnames(
+                  styles.itemCard, 
+                  { [styles.selected]: isSelected },
+                  { [styles.recommended]: isRecommended }
+                )}
                 onClick={() => handleViewDetail(item)}
               >
                 <View className={styles.itemHeader}>
                   <View className={styles.itemIconWrapper}>
                     <Text className={styles.itemIcon}>{item.icon}</Text>
                     {isSelected && <View className={styles.selectedBadge}>✓</View>}
+                    {isRecommended && !isSelected && <View className={styles.recommendedBadge}>荐</View>}
                   </View>
                   <View className={styles.itemInfo}>
                     <View className={styles.itemNameRow}>
@@ -167,6 +209,16 @@ const ItemPage: React.FC = () => {
                 </View>
 
                 <Text className={styles.itemDesc}>{item.description}</Text>
+
+                {mapBonus && (
+                  <View className={styles.mapBonus}>
+                    <Text className={styles.bonusIcon}>🎯</Text>
+                    <Text className={styles.bonusText}>
+                      <Text className={styles.bonusLabel}>{currentMap?.name}：</Text>
+                      {mapBonus.bonus}
+                    </Text>
+                  </View>
+                )}
 
                 <View className={styles.itemStats}>
                   <View className={styles.statItem}>
@@ -243,6 +295,19 @@ const ItemPage: React.FC = () => {
                   <Text className={styles.statLabel}>使用次数</Text>
                 </View>
               </View>
+
+              {getMapBonus(selectedItem) && (
+                <View className={styles.detailMapBonus}>
+                  <Text className={styles.bonusTitle}>
+                    <Text className={styles.icon}>🎯</Text>
+                    地图适配
+                  </Text>
+                  <View className={styles.bonusContent}>
+                    <Text className={styles.bonusMapName}>🗺️ {currentMap?.name}</Text>
+                    <Text className={styles.bonusDesc}>{getMapBonus(selectedItem)?.bonus}</Text>
+                  </View>
+                </View>
+              )}
 
               <View className={styles.detailHowTo}>
                 <Text className={styles.howToTitle}>

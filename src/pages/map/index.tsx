@@ -7,7 +7,7 @@ import type { GameMap } from '@/types/game';
 import classnames from 'classnames';
 
 const MapPage: React.FC = () => {
-  const { maps, currentMap, setMap, currentRoom } = useGameStore();
+  const { maps, currentMap, setMap, currentRoom, items } = useGameStore();
   const [selectedMap, setSelectedMap] = useState<GameMap | null>(null);
   const [showDetail, setShowDetail] = useState(false);
 
@@ -28,6 +28,33 @@ const MapPage: React.FC = () => {
       case 3: return '困难';
       case 4: return '地狱';
       default: return '未知';
+    }
+  };
+
+  const getCapturePointModeText = (mode: string) => {
+    switch (mode) {
+      case 'occupy': return '据点占领';
+      case 'kingOfTheHill': return '山丘之王';
+      case 'none': return '无据点';
+      default: return mode;
+    }
+  };
+
+  const getFlagModeText = (mode: string) => {
+    switch (mode) {
+      case 'standard': return '标准夺旗';
+      case 'neutralOnly': return '中立旗争夺';
+      case 'multiple': return '多旗模式';
+      default: return mode;
+    }
+  };
+
+  const getRespawnModeText = (mode: string) => {
+    switch (mode) {
+      case 'fixed': return '固定复活';
+      case 'dynamic': return '动态复活';
+      case 'capturedPoints': return '据点复活';
+      default: return mode;
     }
   };
 
@@ -92,6 +119,24 @@ const MapPage: React.FC = () => {
                     <Text className={styles.statLabel}>出生点</Text>
                   </View>
                 </View>
+                {map.rules && (
+                  <View className={styles.mapRules}>
+                    <View className={styles.ruleTag}>
+                      <Text className={styles.ruleIcon}>🎯</Text>
+                      <Text className={styles.ruleText}>{getFlagModeText(map.rules.flagMode)}</Text>
+                    </View>
+                    {map.rules.capturePointMode !== 'none' && (
+                      <View className={styles.ruleTag}>
+                        <Text className={styles.ruleIcon}>⭐</Text>
+                        <Text className={styles.ruleText}>{getCapturePointModeText(map.rules.capturePointMode)}</Text>
+                      </View>
+                    )}
+                    <View className={styles.ruleTag}>
+                      <Text className={styles.ruleIcon}>💀</Text>
+                      <Text className={styles.ruleText}>{getRespawnModeText(map.rules.respawnMode)}</Text>
+                    </View>
+                  </View>
+                )}
               </View>
 
               <View className={styles.mapAction}>
@@ -153,7 +198,9 @@ const MapPage: React.FC = () => {
                       key={cp.id}
                       className={styles.capturePoint}
                       style={{ left: `${cp.x}%`, top: `${cp.y}%` }}
-                    ></View>
+                    >
+                      <Text className={styles.cpLabel}>{cp.name?.charAt(0) || '⭐'}</Text>
+                    </View>
                   ))}
                 </View>
               </View>
@@ -182,6 +229,86 @@ const MapPage: React.FC = () => {
                   <Text className={styles.value}>{selectedMap.width} × {selectedMap.height}</Text>
                 </View>
               </View>
+
+              {selectedMap.rules && (
+                <View className={styles.detailRules}>
+                  <Text className={styles.rulesTitle}>
+                    <Text className={styles.icon}>📜</Text>
+                    玩法规则
+                  </Text>
+                  <View className={styles.rulesList}>
+                    <View className={styles.ruleItem}>
+                      <Text className={styles.ruleItemIcon}>🎯</Text>
+                      <View className={styles.ruleItemInfo}>
+                        <Text className={styles.ruleItemName}>旗帜模式</Text>
+                        <Text className={styles.ruleItemDesc}>
+                          {getFlagModeText(selectedMap.rules.flagMode)} · 夺旗得 {selectedMap.rules.scorePerFlag} 分
+                        </Text>
+                      </View>
+                    </View>
+                    {selectedMap.rules.capturePointMode !== 'none' && (
+                      <View className={styles.ruleItem}>
+                        <Text className={styles.ruleItemIcon}>⭐</Text>
+                        <View className={styles.ruleItemInfo}>
+                          <Text className={styles.ruleItemName}>据点模式</Text>
+                          <Text className={styles.ruleItemDesc}>
+                            {getCapturePointModeText(selectedMap.rules.capturePointMode)} · 占领得 {selectedMap.rules.scorePerCapture} 分
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                    <View className={styles.ruleItem}>
+                      <Text className={styles.ruleItemIcon}>💀</Text>
+                      <View className={styles.ruleItemInfo}>
+                        <Text className={styles.ruleItemName}>复活模式</Text>
+                        <Text className={styles.ruleItemDesc}>
+                          {getRespawnModeText(selectedMap.rules.respawnMode)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {selectedMap.capturePoints && selectedMap.capturePoints.length > 0 && (
+                <View className={styles.detailCapturePoints}>
+                  <Text className={styles.sectionTitle}>
+                    <Text className={styles.icon}>⭐</Text>
+                    据点列表
+                  </Text>
+                  <View className={styles.capturePointsList}>
+                    {selectedMap.capturePoints.map(cp => (
+                      <View key={cp.id} className={styles.cpRow}>
+                        <Text className={styles.cpRowIcon}>⭐</Text>
+                        <View className={styles.cpRowInfo}>
+                          <Text className={styles.cpRowName}>{cp.name}</Text>
+                          <Text className={styles.cpRowPos}>位置: ({cp.x}%, {cp.y}%)</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {selectedMap.rules?.recommendedItems && selectedMap.rules.recommendedItems.length > 0 && (
+                <View className={styles.detailRecommendedItems}>
+                  <Text className={styles.sectionTitle}>
+                    <Text className={styles.icon}>🎒</Text>
+                    推荐道具
+                  </Text>
+                  <View className={styles.recommendedItemsList}>
+                    {selectedMap.rules.recommendedItems.map(itemId => {
+                      const item = items.find(i => i.id === itemId);
+                      return item ? (
+                        <View key={itemId} className={styles.recItem}>
+                          <Text className={styles.recItemIcon}>{item.icon}</Text>
+                          <Text className={styles.recItemName}>{item.name}</Text>
+                        </View>
+                      ) : null;
+                    })}
+                  </View>
+                </View>
+              )}
 
               <View className={styles.detailTips}>
                 <Text className={styles.tipsTitle}>

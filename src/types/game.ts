@@ -9,6 +9,7 @@ export interface Player {
   kills: number;
   deaths: number;
   flagsCaptured: number;
+  pointsCaptured: number;
   hasShield: boolean;
   shieldTime: number;
   isSlowdown: boolean;
@@ -19,6 +20,18 @@ export interface Player {
   isAlive: boolean;
   respawnTime: number;
   itemCooldowns: Record<string, number>;
+  itemRemainingUses: Record<string, number>;
+}
+
+export interface MapRules {
+  capturePointMode: 'none' | 'occupy' | 'kingOfTheHill';
+  flagMode: 'standard' | 'neutralOnly' | 'multiple';
+  respawnMode: 'fixed' | 'dynamic' | 'capturedPoints';
+  scorePerFlag: number;
+  scorePerCapture: number;
+  flagCaptureTime: number;
+  capturePointTime: number;
+  recommendedItems: string[];
 }
 
 export interface GameMap {
@@ -38,7 +51,8 @@ export interface GameMap {
     red: { x: number; y: number }[];
     blue: { x: number; y: number }[];
   };
-  capturePoints?: { x: number; y: number; id: string }[];
+  capturePoints?: { x: number; y: number; id: string; name: string }[];
+  rules: MapRules;
 }
 
 export interface GameRoom {
@@ -55,8 +69,10 @@ export interface GameRoom {
   currentRound: number;
   roundTime: number;
   score: { red: number; blue: number };
+  scoreTimeline: { time: number; red: number; blue: number }[];
   activityCode?: string;
   spectators: string[];
+  selectedItems: string[];
 }
 
 export interface Item {
@@ -70,15 +86,20 @@ export interface Item {
   rarity: number;
   icon: string;
   tips: string;
+  mapBonus: { mapId: string; bonus: string }[];
 }
 
 export interface GameRecord {
   id: string;
   date: string;
   mapName: string;
+  mapId: string;
   duration: number;
   winner: 'red' | 'blue' | 'draw';
   score: { red: number; blue: number };
+  scoreTimeline: { time: number; red: number; blue: number }[];
+  mvpPlayerId: string;
+  mvpReason: string;
   players: {
     playerId: string;
     playerName: string;
@@ -87,7 +108,10 @@ export interface GameRecord {
     kills: number;
     deaths: number;
     flagsCaptured: number;
+    pointsCaptured: number;
     isMvp: boolean;
+    mvpReason?: string;
+    itemsUsed: { itemId: string; count: number }[];
   }[];
 }
 
@@ -100,4 +124,5 @@ export interface GameSettings {
   flagCaptureTime: number;
   slowdownDuration: number;
   shieldDuration: number;
+  playerName: string;
 }

@@ -312,6 +312,7 @@
   border: 1px solid rgba(255, 125, 0, 0.3);
   border-radius: $radius-md;
   padding: $spacing-md;
+  margin-bottom: $spacing-lg;
 
   .tipsTitle {
     font-size: $font-size-md;
@@ -333,6 +334,196 @@
 
     li {
       margin-bottom: 4rpx;
+    }
+  }
+}
+
+.mapRules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  margin-top: $spacing-sm;
+}
+
+.ruleTag {
+  display: flex;
+  align-items: center;
+  background: rgba(22, 93, 255, 0.1);
+  border: 1px solid rgba(22, 93, 255, 0.3);
+  border-radius: $radius-round;
+  padding: 4rpx 12rpx;
+
+  .ruleIcon {
+    font-size: 18rpx;
+    margin-right: 4rpx;
+  }
+
+  .ruleText {
+    font-size: 18rpx;
+    color: $color-primary-light;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.capturePoint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .cpLabel {
+    font-size: 20rpx;
+    color: $color-text-primary;
+    font-weight: $font-weight-bold;
+    text-shadow: 0 0 8rpx rgba(0, 0, 0, 0.8);
+  }
+}
+
+.detailRules {
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+
+  .rulesTitle {
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-md;
+    display: block;
+
+    .icon {
+      margin-right: $spacing-xs;
+    }
+  }
+
+  .rulesList {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  .ruleItem {
+    display: flex;
+    align-items: center;
+
+    .ruleItemIcon {
+      font-size: 32rpx;
+      margin-right: $spacing-md;
+      width: 48rpx;
+      text-align: center;
+    }
+
+    .ruleItemInfo {
+      flex: 1;
+
+      .ruleItemName {
+        font-size: $font-size-sm;
+        color: $color-text-primary;
+        font-weight: $font-weight-semibold;
+        display: block;
+      }
+
+      .ruleItemDesc {
+        font-size: $font-size-xs;
+        color: $color-text-secondary;
+        display: block;
+        margin-top: 2rpx;
+      }
+    }
+  }
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+  display: block;
+
+  .icon {
+    margin-right: $spacing-xs;
+  }
+}
+
+.detailCapturePoints {
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+
+  .capturePointsList {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  .cpRow {
+    display: flex;
+    align-items: center;
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid $color-divider;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .cpRowIcon {
+      font-size: 28rpx;
+      margin-right: $spacing-md;
+    }
+
+    .cpRowInfo {
+      flex: 1;
+
+      .cpRowName {
+        font-size: $font-size-sm;
+        color: $color-text-primary;
+        font-weight: $font-weight-semibold;
+        display: block;
+      }
+
+      .cpRowPos {
+        font-size: $font-size-xs;
+        color: $color-text-secondary;
+        display: block;
+        margin-top: 2rpx;
+      }
+    }
+  }
+}
+
+.detailRecommendedItems {
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+
+  .recommendedItemsList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+  }
+
+  .recItem {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: $radius-md;
+    padding: $spacing-sm $spacing-md;
+
+    .recItemIcon {
+      font-size: 28rpx;
+      margin-right: $spacing-xs;
+    }
+
+    .recItemName {
+      font-size: $font-size-sm;
+      color: $color-gold;
+      font-weight: $font-weight-medium;
     }
   }
 }

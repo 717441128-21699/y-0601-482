@@ -12,16 +12,35 @@ const SettingsPage: React.FC = () => {
     updateSettings,
     updateRoomSettings,
     activityCode,
-    setActivityCode
+    setActivityCode,
+    setPlayerName,
+    myPlayerId
   } = useGameStore();
   
   const [showRoundModal, setShowRoundModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [showRespawnModal, setShowRespawnModal] = useState(false);
+  const [showNameModal, setShowNameModal] = useState(false);
   const [rounds, setRounds] = useState(roomSettings.totalRounds);
   const [gameTime, setGameTime] = useState(Math.floor(roomSettings.roundTime / 60));
   const [respawnTime, setRespawnTime] = useState(roomSettings.respawnTime);
   const [inputCode, setInputCode] = useState('');
+  const [playerName, setPlayerNameInput] = useState(settings.playerName || '玩家');
+
+  const handleConfirmName = () => {
+    if (!playerName.trim()) {
+      Taro.showToast({ title: '请输入昵称', icon: 'none' });
+      return;
+    }
+    if (playerName.trim().length > 10) {
+      Taro.showToast({ title: '昵称最多10个字符', icon: 'none' });
+      return;
+    }
+    setPlayerName(playerName.trim());
+    setShowNameModal(false);
+    Taro.showToast({ title: `昵称已改为 ${playerName.trim()}`, icon: 'success' });
+    console.log('[Settings] Player name updated:', playerName.trim());
+  };
 
   const toggleSound = () => {
     updateSettings({ soundEnabled: !settings.soundEnabled });
@@ -107,6 +126,20 @@ const SettingsPage: React.FC = () => {
 
   return (
     <ScrollView className={styles.settingsPage} scrollY>
+      {/* 个人信息卡片 */}
+      <View className={styles.profileCard}>
+        <View className={styles.avatarWrapper}>
+          <Text className={styles.avatar}>👤</Text>
+        </View>
+        <View className={styles.profileInfo}>
+          <Text className={styles.playerName}>{settings.playerName || '玩家'}</Text>
+          <Text className={styles.playerId}>ID: {myPlayerId}</Text>
+        </View>
+        <View className={styles.editNameBtn} onClick={() => setShowNameModal(true)}>
+          <Text className={styles.editNameText}>修改昵称</Text>
+        </View>
+      </View>
+
       {/* 活动口令卡片 */}
       <View className={styles.activityCard}>
         <View className={styles.activityHeader}>
@@ -402,6 +435,32 @@ const SettingsPage: React.FC = () => {
                 取消
               </Button>
               <Button className={styles.btnPrimary} style={{ flex: 1 }} onClick={handleConfirmRespawn}>
+                确定
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* 修改昵称弹窗 */}
+      {showNameModal && (
+        <View className={styles.modalOverlay} onClick={() => setShowNameModal(false)}>
+          <View className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>修改昵称</Text>
+            <Input
+              className={styles.inputField}
+              placeholder="请输入新昵称"
+              placeholderTextColor="#64748B"
+              value={playerName}
+              maxlength={10}
+              onInput={e => setPlayerNameInput(e.detail.value)}
+            />
+            <Text className={styles.inputHint}>最多10个字符</Text>
+            <View className={styles.modalActions}>
+              <Button className={styles.btnSecondary} style={{ flex: 1 }} onClick={() => setShowNameModal(false)}>
+                取消
+              </Button>
+              <Button className={styles.btnPrimary} style={{ flex: 1 }} onClick={handleConfirmName}>
                 确定
               </Button>
             </View>

@@ -23,6 +23,8 @@ interface GameState {
     roundTime: number;
     respawnTime: number;
   };
+  capturePointOwners: Record<string, 'red' | 'blue' | null>;
+  itemsUsed: Record<string, { playerId: string; count: number }[]>;
 
   createRoom: (name: string, maxPlayers: number) => void;
   joinRoom: (roomId: string, activityCode?: string) => void;
@@ -42,10 +44,12 @@ interface GameState {
   updateRoomSettings: (settings: { totalRounds?: number; roundTime?: number; respawnTime?: number }) => void;
   setActivityCode: (code: string) => void;
   updatePlayerGameData: (playerId: string, data: Partial<Player>) => void;
-  updateScore: (team: 'red' | 'blue', delta: number) => void;
+  updateScore: (team: 'red' | 'blue', delta: number, flagType?: string) => void;
   toggleSelectItem: (itemId: string) => void;
   saveGameRecord: () => void;
   tickEffectTimes: () => void;
+  setPlayerName: (name: string) => void;
+  capturePoint: (pointId: string, team: 'red' | 'blue') => void;
 }
 
 const initialSettings: GameSettings = {
@@ -56,7 +60,8 @@ const initialSettings: GameSettings = {
   respawnTime: 10,
   flagCaptureTime: 5,
   slowdownDuration: 5,
-  shieldDuration: 3
+  shieldDuration: 3,
+  playerName: '张三'
 };
 
 const defaultSelectedItems = ['shield', 'speed', 'slowdown', 'shockwave'];
@@ -80,16 +85,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     roundTime: 600,
     respawnTime: 10
   },
+  capturePointOwners: {},
+  itemsUsed: {},
 
   createRoom: (name, maxPlayers) => {
-    const { roomSettings, currentMap, selectedItems } = get();
+    const { roomSettings, currentMap, selectedItems, settings } = get();
     const map = currentMap || mockMaps[0];
+    const playerName = settings.playerName || '我';
     const room: GameRoom = {
       id: 'room-' + Date.now(),
       name,
       hostId: 'p1',
       maxPlayers,
-      players: [{ ...mockWaitingPlayers[0], id: 'p1', name: '我', isHost: true, isReady: true }],
+      players: [{ ...mockWaitingPlayers[0], id: 'p1', name: playerName, isHost: true, isReady: true }],
       mapId: map.id,
       gameStatus: 'waiting',
       gameMode: 'capture',
@@ -97,7 +105,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentRound: 1,
       roundTime: roomSettings.roundTime,
       score: { red: 0, blue: 0 },
-      spectators: []
+      scoreTimeline: [],
+      spectators: [],
+      selectedItems: selectedItems.length > 0 ? selectedItems : defaultSelectedItems
     };
     const initPlayers = room.players.map(p => ({
       ...p,
@@ -113,15 +123,17 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   joinRoom: (roomId, activityCode) => {
-    const { roomSettings, currentMap, selectedItems } = get();
+    const { roomSettings, currentMap, selectedItems, settings } = get();
     const map = currentMap || mockMaps[0];
-    const allPlayers = [...mockWaitingPlayers.slice(0, 5), { ...mockWaitingPlayers[0], id: 'p1', name: '我', isHost: false, isReady: false }];
+    const playerName = settings.playerName || '我';
+    const allPlayers = [...mockWaitingPlayers.slice(0, 5), { ...mockWaitingPlayers[0], id: 'p1', name: playerName, isHost: false, isReady: false }];
     const shuffled = allPlayers.sort(() => Math.random() - 0.5);
     const players = shuffled.map((p, i) => ({
       ...p,
       team: i % 2 === 0 ? 'red' as const : 'blue' as const,
       isReady: Math.random() > 0.3,
-      itemCooldowns: {}
+      itemCooldowns: {},
+      itemRemainingUses: {}
     }));
     
     const room: GameRoom = {
@@ -137,8 +149,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentRound: 1,
       roundTime: roomSettings.roundTime,
       score: { red: 0, blue: 0 },
+      scoreTimeline: [],
       activityCode,
-      spectators: []
+      spectators: [],
+      selectedItems: selectedItems.length > 0 ? selectedItems : defaultSelectedItems
     };
     set({ 
       currentRoom: room, 
@@ -228,10 +242,22 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startGame: () => {
-    const { currentRoom, currentMap, selectedItems } = get();
+    const { currentRoom, currentMap, selectedItems, items } = get();
     if (!currentRoom || !currentMap) return;
     
     const spawnPoints = currentMap.spawnPoints;
+    const rules = currentMap.rules;
+    
+    const initialCaptureOwners: Record<string, 'red' | 'blue' | null> = {};
+    currentMap.capturePoints?.forEach(cp => {
+      initialCaptureOwners[cp.id] = null;
+    });
+    
+    const initialItemUses: Record<string, number> = {};
+    selectedItems.forEach(itemId => {
+      const item = items.find(i => i.id === itemId);
+      initialItemUses[itemId] = item?.uses || 1;
+    });
     
     const playersWithInitData = currentRoom.players.map(p => {
       const teamSpawns = p.team === 'red' ? spawnPoints.red : spawnPoints.blue;
@@ -249,6 +275,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         kills: 0,
         deaths: 0,
         flagsCaptured: 0,
+        pointsCaptured: 0,
         hasShield: false,
         shieldTime: 0,
         isSlowdown: false,
@@ -261,8 +288,14 @@ export const useGameStore = create<GameState>((set, get) => ({
           x: spawn.x + (Math.random() - 0.5) * 6, 
           y: spawn.y + (Math.random() - 0.5) * 6 
         },
-        itemCooldowns
+        itemCooldowns,
+        itemRemainingUses: { ...initialItemUses }
       };
+    });
+    
+    const initItemsUsed: Record<string, { playerId: string; count: number }[]> = {};
+    selectedItems.forEach(itemId => {
+      initItemsUsed[itemId] = [];
     });
     
     set({
@@ -270,13 +303,16 @@ export const useGameStore = create<GameState>((set, get) => ({
         ...currentRoom, 
         gameStatus: 'playing',
         players: playersWithInitData,
-        score: { red: 0, blue: 0 }
+        score: { red: 0, blue: 0 },
+        scoreTimeline: [{ time: currentRoom.roundTime, red: 0, blue: 0 }]
       },
       players: playersWithInitData,
       gameTime: currentRoom.roundTime,
-      isPaused: false
+      isPaused: false,
+      capturePointOwners: initialCaptureOwners,
+      itemsUsed: initItemsUsed
     });
-    console.log('[GameStore] Game started with', selectedItems.length, 'items');
+    console.log('[GameStore] Game started with', selectedItems.length, 'items, rules:', rules.capturePointMode);
   },
 
   pauseGame: () => {
@@ -316,7 +352,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   useItem: (itemId) => {
-    const { currentRoom, myPlayerId, selectedItems, items } = get();
+    const { currentRoom, myPlayerId, selectedItems, items, itemsUsed } = get();
     if (!currentRoom || !selectedItems.includes(itemId)) return;
     
     const me = currentRoom.players.find(p => p.id === myPlayerId);
@@ -328,26 +364,36 @@ export const useGameStore = create<GameState>((set, get) => ({
     const cooldown = me.itemCooldowns[itemId];
     if (cooldown && cooldown > 0) return;
     
+    const remainingUses = me.itemRemainingUses[itemId] ?? 0;
+    if (remainingUses <= 0) {
+      console.log('[GameStore] No remaining uses for:', itemId);
+      return;
+    }
+    
     const updatedPlayers = currentRoom.players.map(p => {
       if (p.id !== myPlayerId) return p;
       
       const newCooldowns = { ...p.itemCooldowns, [itemId]: item.cooldown };
+      const newRemainingUses = { 
+        ...p.itemRemainingUses, 
+        [itemId]: Math.max(0, (p.itemRemainingUses[itemId] ?? 0) - 1) 
+      };
       
       switch (itemId) {
         case 'shield':
-          return { ...p, hasShield: true, shieldTime: item.duration, itemCooldowns: newCooldowns };
+          return { ...p, hasShield: true, shieldTime: item.duration, itemCooldowns: newCooldowns, itemRemainingUses: newRemainingUses };
         case 'speed':
-          return { ...p, hasSpeed: true, speedTime: item.duration, itemCooldowns: newCooldowns };
+          return { ...p, hasSpeed: true, speedTime: item.duration, itemCooldowns: newCooldowns, itemRemainingUses: newRemainingUses };
         case 'slowdown':
-          return { ...p, itemCooldowns: newCooldowns };
+          return { ...p, itemCooldowns: newCooldowns, itemRemainingUses: newRemainingUses };
         case 'shockwave':
-          return { ...p, itemCooldowns: newCooldowns };
+          return { ...p, itemCooldowns: newCooldowns, itemRemainingUses: newRemainingUses };
         case 'invisible':
-          return { ...p, itemCooldowns: newCooldowns };
+          return { ...p, itemCooldowns: newCooldowns, itemRemainingUses: newRemainingUses };
         case 'scout':
-          return { ...p, itemCooldowns: newCooldowns };
+          return { ...p, itemCooldowns: newCooldowns, itemRemainingUses: newRemainingUses };
         default:
-          return { ...p, itemCooldowns: newCooldowns };
+          return { ...p, itemCooldowns: newCooldowns, itemRemainingUses: newRemainingUses };
       }
     });
     
@@ -394,12 +440,23 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
     
+    const newItemsUsed = { ...itemsUsed };
+    const itemUsage = newItemsUsed[itemId] || [];
+    const existingUsage = itemUsage.find(u => u.playerId === myPlayerId);
+    if (existingUsage) {
+      existingUsage.count++;
+    } else {
+      itemUsage.push({ playerId: myPlayerId, count: 1 });
+    }
+    newItemsUsed[itemId] = itemUsage;
+    
     set({
       currentRoom: { ...currentRoom, players: updatedPlayers },
-      players: updatedPlayers
+      players: updatedPlayers,
+      itemsUsed: newItemsUsed
     });
     
-    console.log('[GameStore] Item used:', itemId);
+    console.log('[GameStore] Item used:', itemId, 'remaining:', updatedPlayers.find(p => p.id === myPlayerId)?.itemRemainingUses[itemId]);
   },
 
   addMessage: (text, type) => {
@@ -446,18 +503,77 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  updateScore: (team, delta) => {
-    const { currentRoom } = get();
+  updateScore: (team, delta, flagType) => {
+    const { currentRoom, currentMap, gameTime } = get();
     if (!currentRoom) return;
+    
+    const rules = currentMap?.rules;
+    const scoreMultiplier = flagType === 'flag' ? (rules?.scorePerFlag || 1) : 
+                           flagType === 'capture' ? (rules?.scorePerCapture || 1) : 1;
+    const actualDelta = delta * scoreMultiplier;
     
     const updatedScore = {
       ...currentRoom.score,
-      [team]: currentRoom.score[team] + delta
+      [team]: currentRoom.score[team] + actualDelta
     };
     
+    const timelineEntry = {
+      time: gameTime,
+      red: updatedScore.red,
+      blue: updatedScore.blue
+    };
+    
+    const updatedTimeline = [...(currentRoom.scoreTimeline || []), timelineEntry];
+    
     set({
-      currentRoom: { ...currentRoom, score: updatedScore }
+      currentRoom: { ...currentRoom, score: updatedScore, scoreTimeline: updatedTimeline }
     });
+    console.log('[GameStore] Score updated:', team, '+', actualDelta, 'type:', flagType);
+  },
+
+  setPlayerName: (name) => {
+    const { settings, currentRoom, myPlayerId } = get();
+    
+    set({
+      settings: { ...settings, playerName: name }
+    });
+    
+    if (currentRoom) {
+      const updatedPlayers = currentRoom.players.map(p => 
+        p.id === myPlayerId ? { ...p, name } : p
+      );
+      set({
+        currentRoom: { ...currentRoom, players: updatedPlayers },
+        players: updatedPlayers
+      });
+    }
+    
+    console.log('[GameStore] Player name set to:', name);
+  },
+
+  capturePoint: (pointId, team) => {
+    const { currentRoom, currentMap, capturePointOwners, myPlayerId } = get();
+    if (!currentRoom || !currentMap) return;
+    
+    const newOwners = { ...capturePointOwners, [pointId]: team };
+    const point = currentMap.capturePoints?.find(cp => cp.id === pointId);
+    const rules = currentMap.rules;
+    
+    const updatedPlayers = currentRoom.players.map(p => 
+      p.id === myPlayerId && p.team === team 
+        ? { ...p, pointsCaptured: p.pointsCaptured + 1, score: p.score + (rules?.scorePerCapture || 2) * 10 }
+        : p
+    );
+    
+    set({ capturePointOwners: newOwners });
+    
+    set({
+      currentRoom: { ...currentRoom, players: updatedPlayers },
+      players: updatedPlayers
+    });
+    
+    updateScore(team, rules?.scorePerCapture || 2, 'capture');
+    addMessage(`${team === 'red' ? '红队' : '蓝队'}占领了${point?.name || '据点'}！+${rules?.scorePerCapture || 2}分`, 'system');
   },
 
   setActivityCode: (code) => {
@@ -485,10 +601,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   saveGameRecord: () => {
-    const { currentRoom, currentMap, gameRecords, myPlayerId, roomSettings } = get();
+    const { currentRoom, currentMap, gameRecords, myPlayerId, roomSettings, gameTime, itemsUsed, items } = get();
     if (!currentRoom || !currentMap) return;
     
-    const { score, players, roundTime } = currentRoom;
+    const { score, players, roundTime, scoreTimeline } = currentRoom;
     
     const winner: 'red' | 'blue' | 'draw' = 
       score.red > score.blue ? 'red' : score.blue > score.red ? 'blue' : 'draw';
@@ -496,31 +612,75 @@ export const useGameStore = create<GameState>((set, get) => ({
     const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
     const mvpPlayer = sortedPlayers[0];
     
-    const recordPlayers = players.map(p => ({
-      playerId: p.id,
-      playerName: p.name,
-      team: p.team || 'red',
-      score: p.score,
-      kills: p.kills,
-      deaths: p.deaths,
-      flagsCaptured: p.flagsCaptured,
-      isMvp: p.id === mvpPlayer?.id
-    }));
+    const generateMvpReason = (player: Player): string => {
+      const reasons: string[] = [];
+      if (player.kills >= Math.max(...players.map(p => p.kills))) {
+        reasons.push(`全场最高击杀 ${player.kills} 次`);
+      }
+      if (player.flagsCaptured >= Math.max(...players.map(p => p.flagsCaptured)) && player.flagsCaptured > 0) {
+        reasons.push(`夺旗 ${player.flagsCaptured} 次，是进攻核心`);
+      }
+      if (player.pointsCaptured >= Math.max(...players.map(p => p.pointsCaptured)) && player.pointsCaptured > 0) {
+        reasons.push(`占领据点 ${player.pointsCaptured} 次`);
+      }
+      if (player.deaths <= Math.min(...players.map(p => p.deaths)) && player.deaths > 0) {
+        reasons.push(`仅阵亡 ${player.deaths} 次，生存能力强`);
+      }
+      if (player.score >= 150) {
+        reasons.push(`综合评分 ${player.score}，表现全能`);
+      }
+      if (reasons.length === 0) {
+        reasons.push(`综合表现最佳，评分 ${player.score}`);
+      }
+      return reasons.join('；');
+    };
+    
+    const mvpReason = mvpPlayer ? generateMvpReason(mvpPlayer) : '综合表现最佳';
+    
+    const recordPlayers = players.map(p => {
+      const playerItemsUsed: { itemId: string; count: number }[] = [];
+      Object.entries(itemsUsed).forEach(([itemId, usageList]) => {
+        const usage = usageList.find(u => u.playerId === p.id);
+        if (usage && usage.count > 0) {
+          playerItemsUsed.push({ itemId, count: usage.count });
+        }
+      });
+      
+      return {
+        playerId: p.id,
+        playerName: p.name,
+        team: p.team || 'red',
+        score: p.score,
+        kills: p.kills,
+        deaths: p.deaths,
+        flagsCaptured: p.flagsCaptured,
+        pointsCaptured: p.pointsCaptured,
+        isMvp: p.id === mvpPlayer?.id,
+        mvpReason: p.id === mvpPlayer?.id ? mvpReason : undefined,
+        itemsUsed: playerItemsUsed
+      };
+    });
+    
+    const duration = roundTime - (gameTime || 0);
     
     const record: GameRecord = {
       id: 'record-' + Date.now(),
       date: new Date().toLocaleDateString('zh-CN'),
       mapName: currentMap.name,
-      duration: roundTime - (get().gameTime || 0),
+      mapId: currentMap.id,
+      duration,
       winner,
       score: { ...score },
+      scoreTimeline: scoreTimeline || [],
+      mvpPlayerId: mvpPlayer?.id || '',
+      mvpReason,
       players: recordPlayers
     };
     
     const updatedRecords = [record, ...gameRecords].slice(0, 20);
     
     set({ gameRecords: updatedRecords });
-    console.log('[GameStore] Game record saved:', record.id);
+    console.log('[GameStore] Game record saved:', record.id, 'MVP:', mvpPlayer?.name);
   },
 
   tickEffectTimes: () => {

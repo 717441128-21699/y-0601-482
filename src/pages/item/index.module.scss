@@ -579,3 +579,165 @@
     opacity: 0.9;
   }
 }
+
+.mapInfoCard {
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.15) 0%, rgba(255, 125, 0, 0.1) 100%);
+  border: 1px solid rgba(64, 128, 255, 0.3);
+  border-radius: $radius-xl;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-xl;
+}
+
+.mapInfoHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-md;
+
+  .mapIcon {
+    font-size: 48rpx;
+    margin-right: $spacing-md;
+  }
+
+  .mapInfoText {
+    flex: 1;
+
+    .mapNameLabel {
+      font-size: $font-size-xs;
+      color: $color-text-secondary;
+      display: block;
+    }
+
+    .mapName {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-text-primary;
+    }
+  }
+}
+
+.mapRecommendations {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+
+  .recommendationLabel {
+    font-size: $font-size-sm;
+    color: $color-gold;
+    font-weight: $font-weight-semibold;
+    display: block;
+    margin-bottom: $spacing-sm;
+  }
+
+  .recommendedItems {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+  }
+
+  .recommendedItemTag {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: $radius-round;
+    padding: $spacing-xs $spacing-md;
+
+    .tagIcon {
+      font-size: 24rpx;
+      margin-right: 4rpx;
+    }
+
+    .tagName {
+      font-size: $font-size-xs;
+      color: $color-gold;
+      font-weight: $font-weight-medium;
+    }
+  }
+}
+
+.itemCard.recommended {
+  border-color: $color-gold;
+  box-shadow: 0 0 20rpx rgba(255, 193, 7, 0.2);
+}
+
+.recommendedBadge {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  width: 36rpx;
+  height: 36rpx;
+  background: $color-gold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18rpx;
+  color: #000;
+  font-weight: $font-weight-bold;
+  z-index: 5;
+}
+
+.mapBonus {
+  display: flex;
+  align-items: flex-start;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.2);
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+  margin-top: $spacing-sm;
+
+  .bonusIcon {
+    font-size: 24rpx;
+    margin-right: $spacing-xs;
+    flex-shrink: 0;
+    margin-top: 2rpx;
+  }
+
+  .bonusText {
+    flex: 1;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    line-height: 1.5;
+  }
+
+  .bonusLabel {
+    color: $color-gold;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.detailMapBonus {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 193, 7, 0.05) 100%);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+
+  .bonusTitle {
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-gold;
+    display: block;
+    margin-bottom: $spacing-md;
+
+    .icon {
+      margin-right: $spacing-xs;
+    }
+  }
+
+  .bonusContent {
+    .bonusMapName {
+      font-size: $font-size-sm;
+      color: $color-text-primary;
+      font-weight: $font-weight-semibold;
+      display: block;
+      margin-bottom: $spacing-xs;
+    }
+
+    .bonusDesc {
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      line-height: 1.6;
+    }
+  }
+}

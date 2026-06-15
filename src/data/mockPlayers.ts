@@ -10,6 +10,7 @@ const createBasePlayer = (id: string, name: string): Player => ({
   kills: 0,
   deaths: 0,
   flagsCaptured: 0,
+  pointsCaptured: 0,
   hasShield: false,
   shieldTime: 0,
   isSlowdown: false,
@@ -19,7 +20,8 @@ const createBasePlayer = (id: string, name: string): Player => ({
   position: { x: 0, y: 0 },
   isAlive: true,
   respawnTime: 0,
-  itemCooldowns: {}
+  itemCooldowns: {},
+  itemRemainingUses: {}
 });
 
 export const mockPlayers: Player[] = [
@@ -32,6 +34,7 @@ export const mockPlayers: Player[] = [
     kills: 5,
     deaths: 2,
     flagsCaptured: 2,
+    pointsCaptured: 1,
     position: { x: 20, y: 30 }
   },
   {
@@ -43,6 +46,7 @@ export const mockPlayers: Player[] = [
     kills: 3,
     deaths: 3,
     flagsCaptured: 1,
+    pointsCaptured: 0,
     position: { x: 25, y: 45 }
   },
   {
@@ -54,6 +58,7 @@ export const mockPlayers: Player[] = [
     kills: 2,
     deaths: 4,
     flagsCaptured: 0,
+    pointsCaptured: 1,
     hasShield: true,
     shieldTime: 3,
     position: { x: 15, y: 60 },
@@ -69,6 +74,7 @@ export const mockPlayers: Player[] = [
     kills: 4,
     deaths: 1,
     flagsCaptured: 1,
+    pointsCaptured: 2,
     isSlowdown: true,
     slowdownTime: 3,
     position: { x: 30, y: 35 }
@@ -82,6 +88,7 @@ export const mockPlayers: Player[] = [
     kills: 6,
     deaths: 2,
     flagsCaptured: 2,
+    pointsCaptured: 1,
     position: { x: 75, y: 30 }
   },
   {
@@ -93,6 +100,7 @@ export const mockPlayers: Player[] = [
     kills: 3,
     deaths: 3,
     flagsCaptured: 1,
+    pointsCaptured: 0,
     hasShield: true,
     shieldTime: 2,
     position: { x: 70, y: 50 }
@@ -106,6 +114,7 @@ export const mockPlayers: Player[] = [
     kills: 2,
     deaths: 5,
     flagsCaptured: 0,
+    pointsCaptured: 1,
     position: { x: 80, y: 40 },
     isAlive: false,
     respawnTime: 8
@@ -119,6 +128,7 @@ export const mockPlayers: Player[] = [
     kills: 4,
     deaths: 2,
     flagsCaptured: 1,
+    pointsCaptured: 2,
     position: { x: 65, y: 65 }
   }
 ];
