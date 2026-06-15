@@ -694,3 +694,36 @@
     color: $color-gold;
   }
 }
+
+.playerItemsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: $spacing-xs;
+}
+
+.playerItemTag {
+  display: flex;
+  align-items: center;
+  background: rgba(64, 128, 255, 0.15);
+  border: 1px solid rgba(64, 128, 255, 0.3);
+  border-radius: $radius-round;
+  padding: 2rpx 10rpx;
+
+  .playerItemIcon {
+    font-size: 18rpx;
+    margin-right: 2rpx;
+  }
+
+  .playerItemName {
+    font-size: 18rpx;
+    color: $color-primary-light;
+    margin-right: 4rpx;
+  }
+
+  .playerItemCount {
+    font-size: 18rpx;
+    font-weight: $font-weight-semibold;
+    color: $color-gold;
+  }
+}

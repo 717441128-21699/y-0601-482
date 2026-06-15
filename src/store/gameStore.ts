@@ -552,28 +552,72 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   capturePoint: (pointId, team) => {
-    const { currentRoom, currentMap, capturePointOwners, myPlayerId } = get();
+    const { currentRoom, currentMap, capturePointOwners } = get();
     if (!currentRoom || !currentMap) return;
+    
+    const previousOwner = capturePointOwners[pointId];
+    if (previousOwner === team) return;
     
     const newOwners = { ...capturePointOwners, [pointId]: team };
     const point = currentMap.capturePoints?.find(cp => cp.id === pointId);
     const rules = currentMap.rules;
+    const scoreDelta = rules?.scorePerCapture || 2;
     
-    const updatedPlayers = currentRoom.players.map(p => 
-      p.id === myPlayerId && p.team === team 
-        ? { ...p, pointsCaptured: p.pointsCaptured + 1, score: p.score + (rules?.scorePerCapture || 2) * 10 }
-        : p
-    );
+    const teamPlayers = currentRoom.players.filter(p => p.team === team && p.isAlive);
+    const capturingPlayer = teamPlayers.length > 0 
+      ? teamPlayers[Math.floor(Math.random() * teamPlayers.length)]
+      : currentRoom.players.find(p => p.team === team);
     
-    set({ capturePointOwners: newOwners });
+    let captureMsg: string;
+    if (!previousOwner) {
+      captureMsg = `${team === 'red' ? '红队' : '蓝队'}占领了${point?.name || '据点'}！+${scoreDelta}分`;
+    } else if (previousOwner !== team) {
+      captureMsg = `${team === 'red' ? '红队' : '蓝队'}夺回了${point?.name || '据点'}！+${scoreDelta}分`;
+    }
+    
+    const updatedPlayers = currentRoom.players.map(p => {
+      if (capturingPlayer && p.id === capturingPlayer.id) {
+        return {
+          ...p,
+          pointsCaptured: p.pointsCaptured + 1,
+          score: p.score + scoreDelta * 10
+        };
+      }
+      return p;
+    });
+    
+    const rules_ref = rules;
+    const team_ref = team;
+    const scoreMultiplier = rules_ref?.scorePerCapture || 1;
+    const actualDelta = scoreDelta;
+    
+    const updatedScore = {
+      ...currentRoom.score,
+      [team_ref]: currentRoom.score[team_ref] + actualDelta
+    };
+    
+    const timelineEntry = {
+      time: get().gameTime,
+      red: updatedScore.red,
+      blue: updatedScore.blue
+    };
+    const updatedTimeline = [...(currentRoom.scoreTimeline || []), timelineEntry];
     
     set({
-      currentRoom: { ...currentRoom, players: updatedPlayers },
+      capturePointOwners: newOwners,
+      currentRoom: { 
+        ...currentRoom, 
+        players: updatedPlayers,
+        score: updatedScore,
+        scoreTimeline: updatedTimeline
+      },
       players: updatedPlayers
     });
     
-    updateScore(team, rules?.scorePerCapture || 2, 'capture');
-    addMessage(`${team === 'red' ? '红队' : '蓝队'}占领了${point?.name || '据点'}！+${rules?.scorePerCapture || 2}分`, 'system');
+    if (captureMsg) {
+      addMessage(captureMsg, 'system');
+    }
+    console.log('[GameStore] Point captured:', point?.name, 'by', team, 'player:', capturingPlayer?.name);
   },
 
   setActivityCode: (code) => {

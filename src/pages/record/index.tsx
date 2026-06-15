@@ -7,9 +7,14 @@ import type { GameRecord } from '@/types/game';
 import classnames from 'classnames';
 
 const RecordPage: React.FC = () => {
-  const { gameRecords, myPlayerId } = useGameStore();
+  const { gameRecords, myPlayerId, items } = useGameStore();
   const [activeTab, setActiveTab] = useState<'all' | 'win' | 'mvp'>('all');
   const [selectedRecord, setSelectedRecord] = useState<GameRecord | null>(null);
+
+  const getItemNameById = (itemId: string) => {
+    const found = items.find(i => i.id === itemId);
+    return found ? found.name : itemId;
+  };
 
   const totalGames = gameRecords.length;
   const winGames = gameRecords.filter(r => {
@@ -334,6 +339,19 @@ const RecordPage: React.FC = () => {
                         <Text className={styles.detailPlayerSub}>
                           击杀 {player.kills} · 死亡 {player.deaths} · 夺旗 {player.flagsCaptured || 0} · 占点 {player.pointsCaptured || 0}
                         </Text>
+                        {player.itemsUsed && player.itemsUsed.length > 0 && (
+                          <View className={styles.playerItemsRow}>
+                            {player.itemsUsed.map((iu, iIdx) => (
+                              <View key={iIdx} className={styles.playerItemTag}>
+                                <Text className={styles.playerItemIcon}>🎯</Text>
+                                <Text className={styles.playerItemName}>
+                                  {getItemNameById(iu.itemId)}
+                                </Text>
+                                <Text className={styles.playerItemCount}>×{iu.count}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
                       </View>
                       <Text className={styles.detailPlayerScore}>{player.score}</Text>
                     </View>
@@ -360,26 +378,24 @@ const RecordPage: React.FC = () => {
                         <Text className={styles.detailPlayerSub}>
                           击杀 {player.kills} · 死亡 {player.deaths} · 夺旗 {player.flagsCaptured || 0} · 占点 {player.pointsCaptured || 0}
                         </Text>
+                        {player.itemsUsed && player.itemsUsed.length > 0 && (
+                          <View className={styles.playerItemsRow}>
+                            {player.itemsUsed.map((iu, iIdx) => (
+                              <View key={iIdx} className={styles.playerItemTag}>
+                                <Text className={styles.playerItemIcon}>🎯</Text>
+                                <Text className={styles.playerItemName}>
+                                  {getItemNameById(iu.itemId)}
+                                </Text>
+                                <Text className={styles.playerItemCount}>×{iu.count}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
                       </View>
                       <Text className={styles.detailPlayerScore}>{player.score}</Text>
                     </View>
                   ))}
               </View>
-
-              {selectedRecord.itemsUsed && selectedRecord.itemsUsed.length > 0 && (
-                <View className={styles.detailItemsSection}>
-                  <Text className={styles.detailSectionLabel}>🎒 道具使用统计</Text>
-                  <View className={styles.detailItemsList}>
-                    {selectedRecord.itemsUsed.map((item, idx) => (
-                      <View key={idx} className={styles.detailItemStat}>
-                        <Text className={styles.detailItemIcon}>🎯</Text>
-                        <Text className={styles.detailItemName}>{item.itemId}</Text>
-                        <Text className={styles.detailItemCount}>×{item.count}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
             </ScrollView>
           </View>
         </View>
